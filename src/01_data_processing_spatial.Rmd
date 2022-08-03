@@ -1,0 +1,1221 @@
+# Import Vector Data {#vector_data}
+
+```{r, include=FALSE, warning=F, message=F}
+# data mgmt
+library(tidyverse)
+library(lubridate)
+# visualization
+library(RColorBrewer)
+library(scales)
+library(ggrepel)
+library(viridis)
+library(kableExtra)
+# spatial
+library(sf)
+library(lwgeom) 
+library(mapview) #Interactive maps
+library(leafpop) #map html popup
+
+```
+
+```{r, warning=F, message=F, results='hide'}
+# turn off the s2 processing 
+## https://stackoverflow.com/questions/68478179/how-to-resolve-spherical-geometry-failures-when-joining-spatial-data
+sf::sf_use_s2(FALSE)
+```
+
+## National Forest Management data download
+
+The Forest Activity Tracking System (FACTS) [database](https://data.fs.usda.gov/geodata/edw/datasets.php?xmlKeyword) maintained by the U.S. Department of Agriculture, Forest Service (USFS) used to delineate georeferenced boundaries of forest harvest activities.
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# check for data and download
+zip_path <- c(
+    "https://data.fs.usda.gov/geodata/edw/edw_resources/fc/S_USA.NFSLandUnit.gdb.zip"  # forests boundaries
+    , "https://data.fs.usda.gov/geodata/edw/edw_resources/fc/S_USA.Experimental_Area_Boundaries.gdb.zip" # exp forest boundaries
+    # , "https://data.fs.usda.gov/geodata/edw/edw_resources/fc/S_USA.Activity_TimberHarvest.gdb.zip" # Timber Harvests
+    # , "https://data.fs.usda.gov/geodata/edw/edw_resources/shp/S_USA.Activity_HazFuelTrt_PL.zip" # Hazardous Fuel Treatment Reduction
+    # , "https://data.fs.usda.gov/geodata/edw/edw_resources/shp/S_USA.Activity_SilvTSI.zip" # SilvTSI (Silviculture Timber Stand Improvement)
+    # , "https://data.fs.usda.gov/geodata/edw/edw_resources/shp/S_USA.Activity_SilvReforestation.zip" # SilvReforestation
+    # , "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/MTBS_Fire/data/composite_data/burned_area_extent_shapefile/mtbs_perimeter_data.zip"
+    
+  )
+for (i in 1:length(zip_path)) {
+  f_nm <- paste0( "../data/"
+    , str_split(zip_path[i], "/", simplify = TRUE)[length(str_split(zip_path[i], "/", simplify = TRUE))]
+  )
+  fldr <- paste0(gsub(".zip", "", f_nm))
+  options(timeout = 60 * 15)
+  if(file.exists(fldr) == FALSE){
+    # download data
+    if(file.exists(f_nm) == FALSE){
+      download.file(zip_path[i], destfile = f_nm)
+    }else{print("file already exists")}
+    # unzip
+    unzip(f_nm, overwrite=TRUE, exdir = fldr)
+    file.remove(f_nm)
+  }else{print("unzip already exists")}
+}
+  
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(list = c("f_nm", "fldr", "zip_path"))
+gc()
+```
+
+## Load National Forests shapefile
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# load forest boundary shapefile
+  # extract file name
+    f_path <- paste0("../data", "/", "S_USA.NFSLandUnit.gdb", "/")
+    dta_nm <- paste(f_path
+      , list.files(f_path, pattern = "\\.gdb$")[1]
+      , sep = "/"
+    )
+    lyr_nms <- sf::st_layers(dsn = dta_nm)$name
+    lyr <- lyr_nms[grep("NFSLandUnit", lyr_nms)][1]
+  # load in data
+    forests <- sf::st_read(
+        dsn = dta_nm
+        , layer = lyr
+        , query = "SELECT * FROM \"NFSLandUnit\" 
+                WHERE 
+                  REGION NOT IN ('08', '09', '10')
+                  AND NFSLANDUNITTYPE = 'National Forest'
+            "
+      ) %>% 
+      rename_with(~ tolower(
+        gsub(" ", "_", 
+           str_trim(gsub("\\s+", " ", .x))
+        )
+      ))
+  #rename sf geom column
+    names(forests)[names(forests)==tolower(attr(forests, "sf_column"))] = "geometry"
+    sf::st_geometry(forests) = "geometry"
+
+  #make BHNF only dataset
+    forests_bhnf <- forests %>% filter(region == "02" & nffid == "0471")
+
+  # save cleaned data for reading to R later
+    sf::st_write(forests_bhnf, "../data/forests_bhnf.gpkg", append = FALSE)
+```
+
+## Load Experimental Forests shapefile
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# load forest boundary shapefile
+  # extract file name
+    f_path <- paste0("../data", "/", "S_USA.Experimental_Area_Boundaries.gdb", "/")
+    dta_nm <- paste(f_path
+      , list.files(f_path, pattern = "\\.gdb$")[1]
+      , sep = "/"
+    )
+    lyr_nms <- sf::st_layers(dsn = dta_nm)$name
+    lyr <- lyr_nms[grep("Experimental_Area_Boundaries", lyr_nms)][1]
+  # load in data
+    exp_forests <- sf::st_read(
+        dsn = dta_nm
+        , layer = lyr
+      ) %>%
+      rename_with(~ tolower(
+        gsub(" ", "_",
+           str_trim(gsub("\\s+", " ", .x))
+        )
+      ))
+  #rename sf geom column
+    names(exp_forests)[names(exp_forests)==tolower(attr(exp_forests, "sf_column"))] = "geometry"
+    sf::st_geometry(exp_forests) = "geometry"
+
+  # spatial join BHNF
+    bhef_boundary <- sf::st_intersection(forests_bhnf %>% dplyr::select(nfslandunitid, nffid, nfslandunitname), exp_forests)
+
+  # save cleaned data for reading to R later
+    sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
+```
+
+## Load FACTS Timber Harvests {#harvests}
+
+Metadata file available [here](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_TimberHarvest.xml). 
+
+*Utilize data extracted and saved in Forest Management Impacts on Productivity [project](https://github.com/georgewoolsey/harvest_npp).* 
+
+[This appendix](https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/fseprd539041.pdf) includes a listing of all the active and inactive FACTS activity codes, as well as detailed descriptions of some of the codes.
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# load harvests shapefile
+  harvests <- sf::st_read("../data/harvests.gpkg") %>% 
+    sf::st_transform(crs = sf::st_crs(bhef_boundary))
+
+#rename sf geom column
+  names(harvests)[names(harvests)==tolower(attr(harvests, "sf_column"))] = "geometry"
+  sf::st_geometry(harvests) = "geometry"
+
+# spatial join BHEF
+  bhef_harvests <- sf::st_intersection(bhef_boundary %>% 
+                                         dplyr::select(name, station, hectares, lead_scientist) %>% 
+                                         dplyr::rename_with(~ paste0("exp_forest_", .), -geometry)
+                                    , harvests)
+
+# save cleaned data for reading to R later
+  sf::st_write(bhef_harvests, "../data/bhef_harvests.gpkg", append = FALSE)
+```
+
+### FACTS Harvest Map
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+# make map
+# different background map types: https://leaflet-extras.github.io/leaflet-providers/preview/
+# names(leaflet.providers::providers_loaded()$providers)
+bhef_harvests_l15 <- bhef_harvests %>% dplyr::filter(year_id >= year(Sys.time()) - 15 ) %>% 
+  dplyr::mutate(lab <- paste0(treatment_type_grp, " (", as.character(year_id), ")"))
+mapviewOptions(homebutton = FALSE, basemaps = c("Esri"))
+mapview(bhef_boundary
+        , color = "black"
+        , lwd = 2
+        , alpha.regions = 0
+        , label = FALSE
+        , legend = FALSE
+        , popup = FALSE
+  ) +
+mapview(bhef_harvests_l15
+        , zcol = "treatment_type_grp"
+        , col.regions = viridis::viridis(n=10, direction = -1)
+        , alpha.regions = 0.6
+        , label = c("lab")
+        , legend = FALSE
+          , popup = popupTable(
+              bhef_harvests_l15
+              , zcol = c(
+                "year_id"
+                , "treatment_type_grp"
+                , "activity_name"
+              )
+              , row.numbers = FALSE
+              , feature.id = FALSE
+            )
+  ) 
+```
+
+*Note, only harvests in last 15 years shown*
+
+### Harvests by treatment type
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+# data by treatment type
+bhef_harvests_l15 %>% sf::st_set_geometry(NULL) %>% 
+  dplyr::group_by(activity_name) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::arrange(desc(n)) %>% 
+ggplot(.) +
+  geom_col(aes(y = reorder(activity_name, n), x = n, fill = n), width = 0.7) +
+  geom_text(
+    aes(y = reorder(activity_name, n), x =n, label = scales::comma(n, accuracy = 1))
+    , color = "black", size = 4
+    , position = position_dodge(0.9)
+    , hjust = -0.1
+  ) +
+  labs(
+      title = "Number Harvests Completed by Treatment Type (last 15 years)"
+    ) +
+  xlab("# Harvests") +
+  ylab("Treatment") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_fill_viridis_c(alpha = 0.7, option = "cividis", direction = -1) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+  )
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
+## Load Research Plot data
+
+[Ritter et al. 2022](https://esajournals.onlinelibrary.wiley.com/doi/pdfdirect/10.1002/eap.2682) established eleven, 100x100 m (1-ha), plots within mechanical treatment units. Measurements occurred during the summer of 2017, which represented 3 years post-treatment for small group retention treatment and 4 years post-treatment for free selection-off, free selection-On, and commercial thinning treatments. In the free selection-off treatments, overstory trees were included in the spacing guidelines for precommercial thinning treatment. In the free selection-on treatments, overstory trees were not included in the spacing guidelines for precommercial thinning treatments resulting in residual precommercial trees potentially growing under the crown of an overstory tree. 
+
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# load stem map shapefile
+stem_map <- sf::st_read("../data/BHEF_stem_map.shp") %>% 
+  dplyr::filter(sf::st_is_valid(.)) %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  ))
+#rename sf geom column
+  names(stem_map)[names(stem_map)==tolower(attr(stem_map, "sf_column"))] = "geometry"
+  sf::st_geometry(stem_map) = "geometry"
+
+
+mapview(bhef_harvests_l15
+        , color = "black"
+        , lwd = 2
+        , alpha.regions = 0
+        , label = FALSE
+        , legend = FALSE
+        , popup = FALSE
+  ) +
+mapview(stem_map
+        # , zcol = "treatment_type_grp"
+        # , col.regions = viridis::viridis(n=10, direction = -1)
+        # , alpha.regions = 0.6
+        # , label = c("lab")
+        # , legend = FALSE
+        #   , popup = popupTable(
+        #       harvests_small
+        #       , zcol = c(
+        #         "year_id"
+        #         , "treatment_type_grp"
+        #         , "activity_name"
+        #       )
+        #       , row.numbers = FALSE
+        #       , feature.id = FALSE
+        #     )
+  ) 
+
+
+# clean data
+tsi <- tsi %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  rename(
+    admin_forest_code = admin_fore
+    , admin_region_code = region_cod
+    , activity_cn = activity_1
+    , activity_code = activity_c
+    , activity_name = activity_n
+    , treatment_type = treatment_
+    , nbr_units_planned = nbr_units_
+    , nbr_units_accomplished = nbr_units1
+    , method_code = method_cod
+    , method_desc = method_des
+    , equipment_desc = equipment1
+    , implementation_project_number = implementa
+    , land_suitability_class_code = land_suita
+    , land_suitability_class_desc = land_sui_1
+    , productivity_class_code = productivi
+    , productivity_class_desc = producti_1
+  ) %>% 
+  dplyr::select(
+    admin_forest_code
+    , admin_region_code
+    , activity_cn
+    , activity_code
+    , activity_name
+    , treatment_type
+    , nbr_units_planned
+    , nbr_units_accomplished
+    , method_code
+    , method_desc
+    , equipment_desc
+    , implementation_project_number
+    , land_suitability_class_code
+    , land_suitability_class_desc
+    , productivity_class_code
+    , productivity_class_desc
+    # not renamed
+    , suid
+    , facts_id
+    , subunit
+    , subunit_cn
+    , date_compl
+    , stage_desc
+    , gis_acres
+    , shape_area
+  ) %>% 
+  mutate(
+    year_id = year(date_compl)
+    , activity_name = ifelse(endsWith(activity_name, "FH)") == TRUE
+        , word(activity_name, 1, -2)
+        , activity_name
+    )
+    , harvest_area_m2 = as.numeric(
+           st_area(.)
+           # / 10000  # uncomment for ha
+          )
+  )
+
+#filter BHNF only
+tsi <- sf::st_intersection(forests_bhnf %>% dplyr::select(nfslandunitid, nffid, forest_commonname), tsi)
+
+# save cleaned data for reading to R later
+sf::st_write(tsi, "../data/tsi.gpkg", append = FALSE)
+```
+
+### FACTS TSI data structure
+
+[File metadata](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_SilvTSI.xml)
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+# data structure
+tsi %>% select(c(1:15)) %>% glimpse()
+kable(tsi %>% st_set_geometry(.,NULL) %>% 
+        dplyr::group_by(activity_name) %>% 
+        summarize(freq = n()) %>% 
+        dplyr::arrange(desc(freq)) %>% 
+        dplyr::slice(1:10)
+  , format = "html", caption = "FACTS Silviculture Timber Stand Improvement: Activity Name (top 10)"
+  , col.names = c("Activity Name", "Freq.")) %>% 
+  column_spec(., 2, width = "50em") %>% kable_styling(font_size = 10)
+```
+
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
+## Load FACTS Silviculture Reforestation {#reforestation}
+
+The Silviculture Reforestation metadata file is available [here](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_SilvReforestation.xml). 
+
+Limited to activities in the Black Hills National Forest for preliminary analysis. 
+
+[This appendix](https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/fseprd539041.pdf) includes a listing of all the active and inactive FACTS activity codes, as well as detailed descriptions of some of the codes.
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# load reforestation shapefile
+reforestation <- st_read(
+    dsn = "../data/S_USA.Activity_SilvReforestation/S_USA.Activity_SilvReforestation.shp"
+    , query = "SELECT * FROM \"S_USA.Activity_SilvReforestation\" 
+        WHERE 
+          PROCLAIMED IN ('0203')
+          AND STAGE_DESC = 'Accomplished'
+          AND DATE_COMPL IS NOT NULL
+    " # BHNF only
+  ) %>% 
+  dplyr::filter(sf::st_is_valid(.))
+
+# clean data
+reforestation <- reforestation %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  rename(
+    admin_forest_code = admin_fore
+    , admin_region_code = region_cod
+    , activity_cn = activity_1
+    , activity_code = activity_c
+    , activity_name = activity_n
+    , treatment_type = treatment_
+    , nbr_units_planned = nbr_units_
+    , nbr_units_accomplished = nbr_units1
+    , method_code = method_cod
+    , method_desc = method_des
+    , equipment_desc = equipment1
+    , implementation_project_number = implementa
+    , land_suitability_class_code = land_suita
+    , land_suitability_class_desc = land_sui_1
+    , productivity_class_code = productivi
+    , productivity_class_desc = producti_1
+  ) %>% 
+  dplyr::select(
+    admin_forest_code
+    , admin_region_code
+    , activity_cn
+    , activity_code
+    , activity_name
+    , treatment_type
+    , nbr_units_planned
+    , nbr_units_accomplished
+    , method_code
+    , method_desc
+    , equipment_desc
+    , implementation_project_number
+    , land_suitability_class_code
+    , land_suitability_class_desc
+    , productivity_class_code
+    , productivity_class_desc
+    # not renamed
+    , suid
+    , facts_id
+    , subunit
+    , subunit_cn
+    , date_compl
+    , stage_desc
+    , gis_acres
+    , shape_area
+  ) %>% 
+  mutate(
+    year_id = year(date_compl)
+    , activity_name = ifelse(endsWith(activity_name, "FH)") == TRUE
+        , word(activity_name, 1, -2)
+        , activity_name
+    )
+    , harvest_area_m2 = as.numeric(
+           st_area(.)
+           # / 10000  # uncomment for ha
+          )
+  )
+
+#filter BHNF only
+reforestation <- sf::st_intersection(forests_bhnf %>% dplyr::select(nfslandunitid, nffid, forest_commonname), reforestation)
+
+# save cleaned data for reading to R later
+sf::st_write(reforestation, "../data/reforestation.gpkg", append = FALSE)
+```
+
+### FACTS Reforestation data structure
+
+[File metadata](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_SilvReforestation.xml)
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+# data structure
+reforestation %>% select(c(1:15)) %>% glimpse()
+kable(reforestation %>% st_set_geometry(.,NULL) %>% 
+        dplyr::group_by(activity_name) %>% 
+        summarize(freq = n()) %>% 
+        dplyr::arrange(desc(freq)) %>% 
+        dplyr::slice(1:10)
+  , format = "html", caption = "FACTS Silviculture Reforestation: Activity Name (top 10)"
+  , col.names = c("Activity Name", "Freq.")) %>% 
+  column_spec(., 2, width = "50em") %>% kable_styling(font_size = 10)
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
+## Load FACTS Hazardous Fuel Treatments {#haz_fuel}
+
+The Hazardous Fuel Treatments metadata file is available [here](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_HazFuelTrt_PL.xml). 
+
+Limited to activities in the Black Hills National Forest for preliminary analysis. 
+
+[This appendix](https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/fseprd539041.pdf) includes a listing of all the active and inactive FACTS activity codes, as well as detailed descriptions of some of the codes.
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# load haz_fuel shapefile
+haz_fuel <- st_read(
+    dsn = "../data/S_USA.Activity_HazFuelTrt_PL/S_USA.Activity_HazFuelTrt_PL.shp"
+    , query = "SELECT * FROM \"S_USA.Activity_HazFuelTrt_PL\" 
+        WHERE 
+          STAGE_VALU = 'Accomplished'
+          AND DATE_COMPL IS NOT NULL
+    " # BHNF only
+  )  %>% 
+  dplyr::filter(sf::st_is_valid(.))
+
+# clean data
+haz_fuel <- haz_fuel %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  mutate(
+    land_sui_1 = ""
+    , producti_1 = ""
+    , subunit_cn = ""
+  ) %>% 
+  rename(
+    admin_forest_code = admin_fore
+    , admin_region_code = admin_regi
+    , activity_cn = activity_1
+    , activity_code = activity_c
+    , activity_name = activity
+    , treatment_type = treatment_
+    , nbr_units_planned = nbr_units_
+    , nbr_units_accomplished = nbr_units1
+    , method_code = method_cod
+    , method_desc = method
+    , equipment_desc = equipment
+    , implementation_project_number = implementa
+    , land_suitability_class_code = land_suita
+    , land_suitability_class_desc = land_sui_1
+    , productivity_class_code = productivi
+    , productivity_class_desc = producti_1
+    , stage_desc = stage_valu
+  ) %>% 
+  dplyr::select(
+    admin_forest_code
+    , admin_region_code
+    , activity_cn
+    , activity_code
+    , activity_name
+    , treatment_type
+    , nbr_units_planned
+    , nbr_units_accomplished
+    , method_code
+    , method_desc
+    , equipment_desc
+    , implementation_project_number
+    , land_suitability_class_code
+    , land_suitability_class_desc
+    , productivity_class_code
+    , productivity_class_desc
+    # not renamed
+    , suid
+    , facts_id
+    , subunit
+    , subunit_cn
+    , date_compl
+    , stage_desc
+    , gis_acres
+    , shape_area
+  ) %>% 
+  mutate(
+    year_id = year(date_compl)
+    , activity_name = ifelse(endsWith(activity_name, "FH)") == TRUE
+        , word(activity_name, 1, -2)
+        , activity_name
+    )
+    , harvest_area_m2 = as.numeric(
+           st_area(.)
+           # / 10000  # uncomment for ha
+          )
+  )
+
+#filter BHNF only
+haz_fuel <- sf::st_intersection(forests_bhnf %>% dplyr::select(nfslandunitid, nffid, forest_commonname), haz_fuel)
+
+# save cleaned data for reading to R later
+sf::st_write(haz_fuel, "../data/haz_fuel.gpkg", append = FALSE)
+```
+
+### FACTS Hazardous Fuel Treatments data structure
+
+[File metadata](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_HazFuelTrt_PL.xml)
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+# data structure
+haz_fuel %>% select(c(1:15)) %>% glimpse()
+kable(haz_fuel %>% st_set_geometry(.,NULL) %>% 
+        dplyr::group_by(activity_name) %>% 
+        summarize(freq = n()) %>% 
+        dplyr::arrange(desc(freq)) %>% 
+        dplyr::slice(1:10)
+  , format = "html", caption = "FACTS Hazardous Fuel Treatments: Activity Name (top 10)"
+  , col.names = c("Activity Name", "Freq.")) %>% 
+  column_spec(., 2, width = "50em") %>% kable_styling(font_size = 10)
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
+## Load MTBS Fire Perimeter {#fire_perim}
+
+[Monitoring Trends in Burn Severity (MTBS)](https://www.mtbs.gov/project-overview) is an interagency program whose goal is to consistently map the burn severity and extent of large fires across all lands of the United States from 1984 to present. This includes all fires 1000 acres or greater in the western United States and 500 acres or greater in the eastern Unites States. The extent of coverage includes the continental U.S., Alaska, Hawaii and Puerto Rico. The program is conducted by the U.S. Geological Survey Center for Earth Resources Observation and Science (EROS) and the USDA Forest Service Geospatial Technology and Applications Center (GTAC).
+
+*Only fire perimeter data automatically downloaded above. Also need to download severity mosaic data from [here](https://www.mtbs.gov/direct-download) at the "Burn Severity Mosaics" tab. Select "Continental U.S." in the "Select Region" dropdown. Check the box next to the "Mosaic" table header to get the full MTBS severity dataset and then click the "Download xx Files" button below the table.*
+
+*Save this zip file download to the ../data/ folder as named "DATA.zip" in your project and the code below will extract all zips*
+
+For the severity data, only raster pixel values between 1 and 4 represent burned areas. The remaining data should be dropped:  0 values = "Background/No Data"; 6 = "Non-Processing Area Mask", 5 = "Increased Greenness/Increased Vegetation Response".
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# load fire_perim shapefile
+fire_perim <- st_read(
+    dsn = "../data/mtbs_perimeter_data/mtbs_perims_DD.shp"
+    , query = "SELECT * FROM \"mtbs_perims_DD\" 
+        WHERE 
+          Incid_Type = 'Wildfire'
+          AND Ig_Date IS NOT NULL
+    "
+  ) %>% 
+  dplyr::filter(sf::st_is_valid(.)) %>%
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  sf::st_transform(., crs = st_crs(forests))
+
+# clean data
+fire_perim <- fire_perim %>% 
+  mutate(total_fire_area_m2 = burnbndac / 0.00024711
+         , in_bound_area_m2 = as.numeric(
+           st_area(.)
+           # / 10000  # uncomment for ha
+          )
+         , year_id = year(ig_date)
+  )
+
+# spatial join BHNF
+fire_perim <- sf::st_intersection(forests_bhnf %>% dplyr::select(nfslandunitid, nffid, forest_commonname), fire_perim)
+
+# save cleaned data for reading to R later
+sf::st_write(fire_perim, "../data/fire_perim.gpkg", append = FALSE)
+```
+
+### MTBS Fire Perimeter data structure
+
+[File metadata](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.FinalFirePerimeter.xml)
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+# data structure
+fire_perim %>% select(c(1:15)) %>% glimpse()
+kable(fire_perim %>% st_set_geometry(.,NULL) %>%
+        dplyr::group_by(year_id) %>%
+        summarize(totha = sum(in_bound_area_m2/10000, na.rm = T) ) %>%
+        dplyr::arrange(desc(totha)) %>%
+        dplyr::slice(1:10)
+  , format = "html", caption = "MTBS Fire Perimeter: BHNF Hectares Burned (top 10 1970-present)"
+  , digits = 0
+  , col.names = c("Fire Year", "BHNF Hectares Burned")) %>%
+  column_spec(., 2, width = "50em") %>% kable_styling(font_size = 10)
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+
+st_crs(forests_bhnf) == st_crs(harvests) & st_crs(forests_bhnf) == st_crs(haz_fuel) & st_crs(forests_bhnf) == st_crs(reforestation) & st_crs(forests_bhnf) == st_crs(tsi)
+```
+
+```{r include=FALSE}
+# quick plot
+	ggplot() + 
+	  geom_sf(data = forests_bhnf, alpha = 0.0) + 
+	  geom_sf(data = fire_perim, fill = "firebrick", color = "white") + 
+    # geom_sf_label(data = fire_perim, aes(label = fireyear), label.padding = unit(0.1, "lines"), na.rm = T) +
+	  labs(
+      title = "Fires within the Black Hills National Forest"
+    ) +
+	  theme_minimal()
+```
+
+### Fire Perimiter Map
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+# map
+mapview(forests_bhnf
+        , color = "black"
+        , lwd = 2
+        , alpha.regions = 0
+        , label = FALSE
+        , legend = FALSE
+        , popup = FALSE
+  ) +
+  mapview(fire_perim
+        , zcol = "year_id"
+        , col.regions = inferno(n=4, direction=-1)
+        , alpha.regions = 0.9
+        , map.types =  "Esri"
+        , label = c("incid_name")
+        , legend = FALSE
+          , popup = popupTable(
+              fire_perim
+              , zcol = c(
+                "year_id"
+                , "incid_name"
+                , "total_fire_area_m2"
+              )
+              , row.numbers = FALSE
+              , feature.id = FALSE
+            )
+    )
+
+```
+
+### Extract MTBS Mosaics
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+#unzip data
+if(dir.exists("../data/mtbs_mosaic_data") == FALSE){
+  unzip("../data/DATA.zip", overwrite=TRUE, exdir = "../data/mtbs_mosaic_data")
+}
+#loop through to extract each yearly mosaic
+hey_dir <- "../data/mtbs_mosaic_data/composite_data/MTBS_BSmosaics"
+yrs <- list.dirs(hey_dir, recursive = FALSE)
+for (i in 1:length(yrs)) {
+  # get year name
+  yr <- word(gsub("/", " ", yrs[i]), -1)
+  new_fl <- paste0("../data/mtbs_mosaic_data/", yr, ".tif")
+  # get zip name
+  zip_nm <- list.files(yrs[i], pattern = "*.zip$")[1]
+  zip_dir <- paste0(yrs[i], "/", zip_nm)
+  unzip_dir <- gsub(".zip", "", zip_dir)
+  # rename and move .tif file
+  if(file.exists(new_fl) == FALSE){
+    # unzip
+    unzip(zip_dir, overwrite=TRUE, exdir = unzip_dir)
+    # get name of file
+    cur_nm <- list.files(unzip_dir, pattern = "*.tif$")[1]
+    # copy file
+    file.copy(from = paste0(unzip_dir, "/", cur_nm)
+      , to = new_fl
+    )
+    # delete file
+    file.remove(from = paste0(unzip_dir, "/", cur_nm))
+  }
+}
+```
+
+
+## Forest Health data
+
+Forest Health Protection (FHP) and its partners strive to maintain an accurate [Aerial Detection Survey (ADS) Dataset](https://www.fs.usda.gov/detail/r2/forest-grasslandhealth/?cid=fsbdev3_041629). Aerial detection surveys map pest and disease outbreaks on the landscape, providing data on host tree species, damage causing agent, type and severity of damage. Ground checks are completed in accordance with local and national [guidelines](http://www.fs.fed.us/foresthealth/aviation/qualityassurance.shtml). Please cite "USDA Forest Service, Forest Health Protection and its partners" as the source of this data in maps and publications. See the [GIS Handbook and Data Conformity Standards](https://www.fs.fed.us/foresthealth/technology/docs/DMSM_Tutorial/story_content/external_files/GIS-Handbook-for-Forest-Health-Detection-Survey.pdf) for full detail.
+
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# web scrape data from this url
+url <- "https://www.fs.usda.gov/detail/r2/forest-grasslandhealth/?cid=fsbdev3_041629"
+# years with data
+yrs <- 
+  rvest::read_html(url) %>% 
+  rvest::html_elements("td > strong") %>% 
+  rvest::html_text()
+# zip file paths
+hrefs <- 
+  rvest::read_html(url) %>% 
+  # the links
+  rvest::html_nodes("a") %>% 
+  # the header ref
+  rvest::html_attr("href")
+
+zips <- hrefs[grepl("\\.zip", hrefs)]
+
+# data table
+for_health_tab <- data.frame(
+    year_id = yrs
+    , zip_path = zips
+  ) %>% 
+  mutate(dl_path = paste0("https://www.fs.usda.gov/", zips)
+         , orig_fname = word(gsub("/", " ", zip_path), -1)
+  )
+
+#loop through to download
+hey_dir <- "../data/forest_health/"
+if(dir.exists(hey_dir)==FALSE){
+  dir.create(hey_dir)
+}
+for(i in 1:nrow(for_health_tab)){
+# for(i in c(1:2, 25:26)){
+  # set up names
+  zip_nm <- paste0( hey_dir
+    , for_health_tab$orig_fname[i]
+  )
+  yr <- for_health_tab$year_id[i]
+  f_path <- paste0(hey_dir
+    , "f_"
+    , yr
+  )
+  f_nm <- paste0(f_path
+    , ".zip"
+  )
+  options(timeout = 60 * 15)
+  ########################
+  ## download and unzip
+  ########################
+  if(dir.exists(f_path)==FALSE){
+    # download
+    download.file(for_health_tab$dl_path[i], destfile = f_nm)
+    # unzip
+    unzip(f_nm, overwrite=TRUE, exdir = f_path )
+    file.remove(f_nm)
+  }else{
+    # print(paste0(yr, " file already exists"))
+  }
+  ########################
+  ## load in data
+  ########################
+  ## load yearly data with a damage shapefile (*_dmg.shp)
+  if(length(list.files(f_path, pattern = "_dmg.shp$"))==1){
+    # extract file name
+    dta_nm <- paste0(f_path
+      , "/"
+      , list.files(f_path, pattern = "_dmg.shp$")[1]
+    )
+    # load in data
+    temp_dta <- st_read(
+        dsn = dta_nm
+      ) %>%
+      rename_with(~ tolower(
+        gsub(" ", "_",
+           str_trim(gsub("\\s+", " ", .x))
+        )
+      )) %>% 
+      dplyr::mutate(
+        id = paste0(yr, "-", as.character(dplyr::row_number()))
+        , year_id = yr
+        , dca_code1 = dca1
+        , dca_code2 = dca2
+        , host_code1 = host1
+        , host_code2 = host2
+        , damage_type_code1 = dmg_type1
+        , damage_type_code2 = dmg_type2
+        , number_of_trees_code = no_trees1
+        , trees_per_acre1 = tpa1
+        , trees_per_acre2 = tpa2
+        , percent_affected_code1 = as.integer(NA)
+        , percent_affected_code2 = as.integer(NA)
+      ) %>% 
+      dplyr::select(
+        id
+        , year_id
+        , acres
+        , notes
+        # damage causing agents
+        , dca_code1
+        , dca_code2
+        # host (tree species)
+        , host_code1
+        , host_code2
+        # damage type
+        , damage_type_code1
+        , damage_type_code2
+        # number of trees
+        , number_of_trees_code
+        # severity
+        , trees_per_acre1
+        , trees_per_acre2
+        , percent_affected_code1
+        , percent_affected_code2
+        # geometry
+        , geometry
+      ) %>% 
+      sf::st_transform(., crs = st_crs(forests)) %>% 
+      dplyr::filter(sf::st_is_valid(.))
+    # end
+    print(paste0(yr, "...data loaded (shp)"))
+  }else{
+  ## load yearly data with a geodatabase (.gdb)
+    if(length(list.files(f_path, pattern = "\\.gdb$"))==1){
+      # extract file name
+    dta_nm <- paste0(f_path
+      , "/"
+      , list.files(f_path, pattern = "\\.gdb$")[1]
+    )
+    lyr_nms <- st_layers(dsn = dta_nm)$name
+    lyr <- lyr_nms[grep("_dmg", lyr_nms)][1]
+    # load in data
+    temp_dta <- st_read(
+        dsn = dta_nm
+        , layer = lyr
+      )
+    #rename sf geom column
+    names(temp_dta)[names(temp_dta)==attr(temp_dta, "sf_column")] = "geometry"
+    sf::st_geometry(temp_dta) = "geometry"
+    #data clean
+    temp_dta <- temp_dta %>%
+      rename_with(~ tolower(
+        gsub(" ", "_",
+             str_trim(gsub("\\s+", " ", .x))
+        )
+      )) %>% 
+      dplyr::mutate(
+        id = paste0(yr, "-", as.character(dplyr::row_number()))
+        , year_id = yr
+        , dca_code1 = dca_code
+        , host_code1 = host_code
+        , damage_type_code1 = damage_type_code
+        , number_of_trees_code1 = number_of_trees_code
+        , trees_per_acre1 = as.numeric(NA)
+        , trees_per_acre2 = as.numeric(NA)
+        , percent_affected_code1 = percent_affected_code
+      ) %>% 
+      dplyr::select(
+        id
+        , year_id
+        , acres
+        , notes
+        # damage causing agents
+        , dca_code1
+        , dca_code2
+        # host (tree species)
+        , host_code1
+        , host_code2
+        # damage type
+        , damage_type_code1
+        , damage_type_code2
+        # number of trees
+        , number_of_trees_code
+        # severity
+        , trees_per_acre1
+        , trees_per_acre2
+        , percent_affected_code1
+        , percent_affected_code2
+        # geometry
+        , geometry
+      ) %>% 
+      sf::st_transform(., crs = st_crs(forests)) %>% 
+      dplyr::filter(sf::st_is_valid(.))
+    #end
+      print(paste0(yr, "...data loaded (gdb)"))
+    }else{
+      print(paste0("!!!!!!!! ", yr, " data not loaded", " !!!!!!!!"))
+    }
+  }
+  ######## append to prior data
+  if(i==1){
+    forest_health <- temp_dta
+  }else{
+    forest_health <- rbind(forest_health, temp_dta) 
+  }
+  remove(list = c("temp_dta"))
+}
+remove(list = c("dta_nm", "f_nm", "f_path", "for_health_tab", "hey_dir", "hrefs", "lyr", "lyr_nms", "url", "yr", "yrs", "zip_nm", "zips"))
+
+# quick plot
+	ggplot() + 
+	  geom_sf(data = forests %>% dplyr::filter(region == "02"), alpha = 0.0) + 
+	  geom_sf(data = forest_health %>%
+	            # dplyr::group_by(year_id) %>% 
+	            dplyr::slice_sample(prop = 0.05)
+	          , aes(color = as.numeric(year_id))) + 
+    scale_fill_viridis_c(direction = -1) +
+    # scale_fill_continuous(type = "viridis") +
+	  labs(
+      title = "Forest Health Map"
+    ) +
+	  theme_minimal() +
+	  theme(
+	    legend.position="none"
+	  )
+
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+# quick data checks
+nrow(forest_health %>% 
+  dplyr::filter(
+    (!is.na(trees_per_acre1) & trees_per_acre1 > 0)
+    | (!is.na(percent_affected_code1) & percent_affected_code1 > 0)
+  ))
+# why is there so much missing mortality data?
+summary(forest_health$trees_per_acre1)
+ggplot(forest_health %>% dplyr::filter(!is.na(trees_per_acre1))) + 
+  geom_freqpoly(aes(x = trees_per_acre1,  y = after_stat(density), color = year_id)) +
+  facet_wrap(~year_id, labeller = labeller(treatment_type_grp = label_wrap_gen(10))) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+  )
+
+forest_health %>% dplyr::filter(trees_per_acre1==-1) %>% 
+  st_set_geometry(.,NULL) %>% 
+  group_by(dca_code1) %>% 
+  summarize(n=n()) %>% 
+  ungroup() %>% 
+  mutate(N=sum(n), pct = n/N) %>% 
+  arrange(desc(n))
+
+table(forest_health$percent_affected_code1)
+ggplot(forest_health %>% dplyr::filter(!is.na(percent_affected_code1))) + 
+  geom_freqpoly(aes(x = percent_affected_code1,  y = after_stat(density), color = year_id)) +
+  facet_wrap(~year_id, labeller = labeller(treatment_type_grp = label_wrap_gen(10))) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+  )
+```
+
+### Forest Health Severity Metric
+
+In the early 2000’s TPA was the ADS standard for recording severity on mortality damage polygons. In 2012, Forest Service regions 2 and 3 piloted an alternative to TPA, a four-class severity ranking system based on the percent of canopy occupied by recently dead trees. In 2016-2017 the 5-class percent affected rating became a software-enforced standard for all state & regional survey partners. See  [Procedure for Crosswalking TPA and Percent Affected](https://www.fs.fed.us/foresthealth/technology/docs/DMSM_Tutorial/story_content/external_files/DMSM_TPA_Percent_Affected_Crosswalk.pdf).
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# create one column for tree damage severity
+# To detect trends or calculate cumulative mortality impacts with an 
+  # ADS tree mortality time series that spans the use of TPA and percent affected, 
+  # analysts need a method to crosswalk one measure to the other.
+
+# drop observations where damage severity is missing
+tpa_pctaff <- forest_health %>% 
+  sf::st_set_geometry(.,NULL) %>% 
+  dplyr::filter(
+    (!is.na(trees_per_acre1) & trees_per_acre1 > 0)
+    | (!is.na(percent_affected_code1) & percent_affected_code1 > 0)
+  ) %>% 
+  dplyr::mutate(
+    is_pct_affected = ifelse(!is.na(percent_affected_code1), 1, 0)
+  )
+
+# data table for percent_affected_code1 (see link at section head)
+pct_aff_tab <- data.frame(
+    percent_affected_code1 = c(1, 2, 3, 4, 5)
+    , percent_affected_rating_description = c("Very Light", "Light", "Medium", "Severe", "Very Severe")
+    , percent_affected_range_class = c("1-3%", "4-10%", "11-29%", "30-50%", ">50%")
+    , percent_affected_range_midpt = c("2%", "7%", "20%", "40%", "75%")
+  )
+
+############################################################
+# 1: For Percent-Affected features: Calculate the percentage of acreage in each of the five Percent-Affected classes.
+############################################################
+pctaff_cuts <- tpa_pctaff %>% 
+  dplyr::filter(is_pct_affected == 1) %>% 
+  dplyr::group_by(percent_affected_code1) %>% 
+  summarize(acres=sum(acres)) %>% 
+  ungroup() %>% 
+  arrange(percent_affected_code1) %>% 
+  mutate(tot_acres=sum(acres), pct = acres/tot_acres, cum_pct = cumsum(pct)) 
+  
+############################################################
+# 2: For TPA-attributed features: Based on a low to high TPA sorted list, create five TPA-range 
+  # bins that approximate the acreage percentages from step one.
+    # For example, if from step one 25% of all tree mortality acreage mapped using
+    # Percent Affected was classed ‘Very Light 1-3%’, the analyst would determine what
+    # range of lowest TPA value features constitutes 25% of all TPA-attributed acreage.
+############################################################
+tpa_cuts <- tpa_pctaff %>% 
+  dplyr::filter(is_pct_affected == 0) %>% 
+  dplyr::arrange(trees_per_acre1, acres) %>% 
+  dplyr::mutate(
+    cum_acres =  cumsum(acres)
+    , cum_pct = cum_acres / sum(acres)
+    , cum_pct_lead1 = dplyr::lead(cum_pct, 1)
+    , round_tpa = round(trees_per_acre1)
+  ) %>% 
+    # filter tpa values at same cumulative pct cut points
+  dplyr::filter(
+        (cum_pct <= (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 1))$cum_pct
+          & cum_pct_lead1 > (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 1))$cum_pct
+        )
+        | (cum_pct <= (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 2))$cum_pct
+          & cum_pct_lead1 > (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 2))$cum_pct
+        )
+        | (cum_pct <= (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 3))$cum_pct
+          & cum_pct_lead1 > (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 3))$cum_pct
+        )
+        | (cum_pct <= (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 4))$cum_pct
+          & cum_pct_lead1 > (pctaff_cuts %>% dplyr::filter(percent_affected_code1 == 4))$cum_pct
+        )
+  ) %>% 
+  dplyr::mutate(tpa_cut = dplyr::row_number()) %>% 
+  dplyr::select(round_tpa, tpa_cut) %>% 
+  pivot_wider(names_from = tpa_cut, values_from = round_tpa, names_prefix = "cut")
+
+############################################################
+# 3. Crosswalk TPA and Percent Affected: Based on the TPA ranges calculated in step 2 either:
+    # a. assign an estimated Percent Affected class for each TPA-attributed feature and/or
+    # b. use the mean or area weighted mean value for each of the five TPA range bins to
+    #   assign an estimated TPA for each Percent Affected mortality feature.
+############################################################
+forest_health <- forest_health %>% 
+  dplyr::full_join(tpa_cuts, by = character()) %>% 
+  dplyr::mutate(
+    percent_affected_code1 = dplyr::case_when(
+      trees_per_acre1 <= 0 | percent_affected_code1 <= 0   ~ as.integer(NA)
+      , !is.na(percent_affected_code1)    ~ percent_affected_code1
+      , is.na(trees_per_acre1)          ~ as.integer(NA)
+      , trees_per_acre1 <= cut1         ~ as.integer(1)
+      , trees_per_acre1 <= cut2         ~ as.integer(2)
+      , trees_per_acre1 <= cut3         ~ as.integer(3)
+      , trees_per_acre1 <= cut4         ~ as.integer(4)
+      , trees_per_acre1 > cut4          ~ as.integer(5)
+      , TRUE                            ~ as.integer(NA)
+    )
+  ) %>% 
+  dplyr::select(-c(cut1:cut4)) %>% 
+  dplyr::left_join(pct_aff_tab, by = "percent_affected_code1")
+
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+# roughly same distribution for TPA and Pct Aff data?
+ggplot(forest_health, aes(x=percent_affected_code1)) +
+  geom_freqpoly(aes(y=after_stat(density), color = as.factor(
+        ifelse(!is.na(trees_per_acre1), 1, 0)
+      ))
+  , binwidth = 1) +
+  theme_bw() +
+  theme(
+    legend.title = element_blank()
+  )
+
+remove(list = c("pct_aff_tab", "pctaff_cuts", "tpa_cuts", "tpa_pctaff"))
+gc()
+```
+
+### Forest Health Detail
+
+All damage features require core attributes such as Damage Type, Damage Causal Agent, and Host (or Host Group). The list of valid codes for these core fields can change over time. Retired codes cannot be used; however, they are retained in the IDS archive for analyses of historical survey data. Code lookup sheets can be accessed [here](https://www.fs.fed.us/foresthealth/applied-sciences/mapping-reporting/digital-mobile-sketch-mapping.shtml).
+
+```{r, warning=F, message=F, results='hide', fig.width = 8, fig.height = 5}
+# data download
+lookups <- data.frame(
+  dta_name = c("damage_type", "host", "dca")
+  , url_pth = c(
+    "https://www.fs.fed.us/foresthealth/technology/docs/DamageTypeList.xlsx"
+    , "https://www.fs.fed.us/foresthealth/technology/docs/Host_List.xlsx"
+    , "https://www.fs.fed.us/foresthealth/technology/docs/DCA_List.xlsx"
+  )
+  , sht_nm = c(
+    "Full list including retired"
+    , "Full_FIA_treelist"
+    , "IDS DCA list (includes retired)"
+  )
+) %>% 
+dplyr::mutate(
+  f_name = word(gsub("/", " ", url_pth), -1)
+)
+
+# download
+f_dir <- paste0( "../data/forest_health/")
+for (i in 1:nrow(lookups)){
+  f_pth <- paste0(f_dir 
+    , lookups$dta_name[i]
+    , ".xlsx"
+  )
+  download.file(lookups$url_pth[i], destfile = f_pth, mode="wb")
+}
+
+#clean damage type
+damage_type <- readxl::read_excel(
+    paste0(f_dir, "damage_type.xlsx")
+    , sheet = "Full list including retired"
+  ) %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  dplyr::select(-retired_codes)
+  # damage_type$dmg_type_code
+
+#clean host type
+host_type <- readxl::read_excel(
+    paste0(f_dir, "host.xlsx")
+    , sheet = "Full_FIA_treelist"
+  ) %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  rename(code = spcd) %>% 
+  dplyr::select(code, symbol, common_name, genus, species) %>% 
+  dplyr::rename_with(~ paste0("host_", .x))
+  
+#clean dca type
+dca_type <- readxl::read_excel(
+    paste0(f_dir, "dca.xlsx")
+    , sheet = "IDS DCA list (includes retired)"
+  ) %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  dplyr::select(-c(retired_code, reassigned_dca)) %>% 
+  dplyr::rename_with(~ paste0("dca_", .x))
+  
+# join
+forest_health <- forest_health %>% 
+  dplyr::left_join(damage_type, by = c("damage_type_code1" = "dmg_type_code")) %>% 
+  dplyr::left_join(host_type, by = c("host_code1" = "host_code")) %>% 
+  dplyr::left_join(dca_type, by = c("dca_code1" = "dca_code"))
+  
+# save cleaned data for reading to R later
+sf::st_write(forest_health, "../data/forest_health.gpkg", append = FALSE)
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(list = c("damage_type", "dca_type", "host_type", "lookups", "f_dir", "f_pth"))
+gc()
+```
+

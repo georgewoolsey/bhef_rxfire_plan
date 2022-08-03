@@ -1,0 +1,63 @@
+--- 
+title: "Black Hills Experimental Forest Prescribed Fire Planning"
+author: "George Woolsey"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: 
+  bookdown::gitbook: default
+  # bookdown::render_book("index.Rmd", bookdown::gitbook(lib_dir = "src"))
+documentclass: book
+bibliography: [packages.bib]
+biblio-style: apalike
+csl: https://raw.githubusercontent.com/citation-style-language/styles/master/research-institute-for-nature-and-forest.csl
+suppress-bibliography: false
+lang: en-US
+zotero: true
+link-citations: true
+description: "Using the bookdown package to write a book for BHEF Rx fire planning. The output format for this example is bookdown::gitbook."
+---
+
+# Introduction
+
+My name is George Woolsey and I am currently employed by the United States Forest Service working with [Dr. Mike Battaglia](https://www.fs.usda.gov/rmrs/people/mbattaglia) at the [Rocky Mountain Research Station](https://www.fs.usda.gov/rmrs/) in Fort Collins, Colorado. In addition, I am pursuing a MS in Forest Sciences at Colorado State University (CSU). At CSU I am working with Dr. Wade Tinkham in the [Forest Biometrics Lab](https://sites.warnercnr.colostate.edu/wtinkham/).
+
+# Objective
+
+The objective of this analysis is to describe the site conditions on the [Black Hills Experimental Forest](https://www.fs.usda.gov/rmrs/experimental-forests-and-ranges/black-hills-experimental-forest) (North Dakota, USA) for planning future prescribed fire treatments. This analysis incorporates the spatial location of research plots and some of the measurements collected at those plots (e.g. [Ritter et al. 2022](https://esajournals.onlinelibrary.wiley.com/doi/pdfdirect/10.1002/eap.2682)). In ponderosa pine (*Pinus ponderosa*) forests, prescribed fires and wildfires burning under moderate conditions can effectively reduce fuel loading and restore the structures and complex spatial patterns that existed in these forests historically ([Holden et al. 2007](https://link.springer.com/article/10.4996/fireecology.0302018); [Battaglia et al. 2008](https://www.sciencedirect.com/science/article/pii/S0378112708005872?casa_token=dFT72MfRci0AAAAA:-oOg81ItoxHaah1SeeRY9GdgcXgjBHgOhyZtbmk5U5e-IBFDgpEjNlFoo2P1wCvcKfj0a9dxCQQ)). 
+
+In the ponderosa pine forests of the Black Hills, ladder fuels can develop quickly after a mechanical treatment if regeneration densities are not regulated. Prescribed fire can successfully maintain low regeneration densities following fuel treatments ([Battaglia et al. 2008](https://www.sciencedirect.com/science/article/pii/S0378112708005872?casa_token=dFT72MfRci0AAAAA:-oOg81ItoxHaah1SeeRY9GdgcXgjBHgOhyZtbmk5U5e-IBFDgpEjNlFoo2P1wCvcKfj0a9dxCQQ)). In addition to reducing tree densities and surface fuel loads, prescribed fires can be used to improve nutrient cycling, increase forage plant production, and improve wildlife habitat ([DeBano et al. 1998](https://books.google.com/books?id=cFxtriC2EDkC&lpg=PR15&ots=lzCwcsNMeg&dq=Fire's%20Effects%20on%20Ecosystems&lr&pg=PP1#v=onepage&q=Fire's%20Effects%20on%20Ecosystems&f=false); [Allen et al. 2002](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1890/1051-0761%282002%29012%5B1418%3AEROSPP%5D2.0.CO%3B2?casa_token=uFvw56TXOLsAAAAA%3A-zBtux0R_Ex4LLcEDpGZmcPs1vqygMErGnSS-DNWVYQkDC_Ti8eldbkhE4CkPXUwPmm5YO35gZI1axg)). 
+
+
+```{r include=FALSE, echo=FALSE}
+knitr::write_bib(c(
+  .packages(),
+  'bookdown'
+  , 'knitr'
+  , 'rmarkdown'
+  , 'car'
+  , 'dataRetrieval'
+  , 'dygraphs'
+  , 'ggthemes'
+  , 'gplots'
+  , 'LAGOSNE'
+  , 'leafpop'
+  , 'lubridate'
+  , 'mapview'
+  , 'pdftools'
+  , 'R.matlab'
+  , 'RApiSerialize'
+  , 'RColorBrewer'
+  , 'readxl'
+  , 'rnassqs'
+  , 'rvest'
+  , 'scales'
+  , 'sf'
+  , 'tidyr'
+  , 'tidyverse'
+  , 'USAboundaries'
+  , 'USAboundariesData'
+  , 'viridis'
+  , 'xgboost'
+  , 'xts'
+), 'packages.bib')
+```
