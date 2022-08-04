@@ -1,0 +1,163 @@
+# Analyze Stem Map Data {#stem_map}
+
+```{r, include=FALSE, warning=F, message=F}
+# data mgmt
+library(tidyverse)
+library(lubridate)
+# visualization
+library(RColorBrewer)
+library(scales)
+library(ggrepel)
+library(viridis)
+library(kableExtra)
+# spatial
+library(sf)
+library(lwgeom) 
+library(mapview) #Interactive maps
+library(leafpop) #map html popup
+library(spatstat) #point pattern analysis
+
+```
+
+```{r, warning=F, message=F, results='hide'}
+# turn off the s2 processing 
+## https://stackoverflow.com/questions/68478179/how-to-resolve-spherical-geometry-failures-when-joining-spatial-data
+sf::sf_use_s2(FALSE)
+```
+
+## Load Data
+
+Spatial data was loaded and cleaned in [prior chapter](#vector_data). 
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# save cleaned data for reading to R later
+forests_bhnf <- sf::st_read("../data/forests_bhnf.gpkg")
+bhef_boundary <- sf::st_read("../data/bhef_boundary.gpkg")
+bhef_harvests <- sf::st_read("../data/bhef_harvests.gpkg")
+research_plots <- sf::st_read("../data/research_plots.gpkg")
+stem_map <- sf::st_read("../data/stem_map.gpkg")
+```
+
+## Stem Map Point Grouping
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# create unit, plot id
+stem_map <- stem_map %>% 
+  dplyr::mutate(
+    unit_plot_id = paste(unit, plot, sep = "_")
+  ) %>% 
+  dplyr::relocate(uidtree, unit_plot_id, unit, plot)
+  
+# keep one unit, plot
+list_unit_plot <- unique(stem_map$unit_plot_id)
+xxx <- stem_map %>% 
+  dplyr::filter(unit_plot_id == list_unit_plot[1])
+
+```
+
+
+
+
+
+
+
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
+
+
+## Map Harvests, Research Plots, Stem Map
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# make map
+# different background map types: https://leaflet-extras.github.io/leaflet-providers/preview/
+# names(leaflet.providers::providers_loaded()$providers)
+mapviewOptions(homebutton = FALSE, basemaps = c("Esri"))
+# map
+mapview(bhef_boundary
+        , color = "black"
+        , lwd = 3
+        , alpha.regions = 0
+        , label = FALSE
+        , legend = FALSE
+        , popup = FALSE
+) +
+mapview(bhef_harvests_l15
+        , zcol = "treatment_type_grp"
+        , col.regions = viridis::viridis(n=length(unique(bhef_harvests_l15$treatment_type_grp)))
+        , alpha.regions = 0.6
+        , label = c("lab")
+        , legend = FALSE
+          , popup = popupTable(
+              bhef_harvests_l15
+              , zcol = c(
+                "year_id"
+                , "treatment_type_grp"
+                , "activity_name"
+              )
+              , row.numbers = FALSE
+              , feature.id = FALSE
+            )
+) +
+mapview(research_plots
+        , zcol = "trt"
+        , col.regions = viridis::mako(n=length(unique(research_plots$trt)), direction = -1)
+        , lwd = 2
+        , col = "gray90"
+        , alpha.regions = 0.8
+        , label = c("trt")
+        , legend = FALSE
+          , popup = popupTable(
+              research_plots
+              , zcol = c(
+                "plot"
+                , "trt"
+                , "harvest_activity_name_1"
+                , "harvest_year_id_1"
+              )
+              , row.numbers = FALSE
+              , feature.id = FALSE
+            )
+)  +
+mapview(stem_map
+  , zcol = "unit"
+  , col.regions = viridis::turbo(n=length(unique(stem_map$unit)), alpha = 0.8)
+    # RColorBrewer::brewer.pal(n = length(unique(stem_map$unit)), name = "RdYlBu")
+  , cex = 3.5
+  , label = c("unit")
+  , legend = FALSE
+    , popup = popupTable(
+        stem_map
+        , zcol = c(
+          "unit"
+          , "plot"
+          , "species"
+          , "tag"
+          , "heightft"
+          , "dbhin"
+          , "harvest_activity_name_1"
+          , "harvest_year_id_1"
+        )
+        , row.numbers = FALSE
+        , feature.id = FALSE
+      )
+)
+
+```
+
+*Note, only harvests in last 15 years shown*
+
+## Write Out Data
+
+Make a map of the stem mapped trees.
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# save cleaned data for reading to R later
+sf::st_write(forests_bhnf, "../data/forests_bhnf.gpkg", append = FALSE)
+sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
+sf::st_write(bhef_harvests, "../data/bhef_harvests.gpkg", append = FALSE)
+sf::st_write(research_plots, "../data/research_plots.gpkg", append = FALSE)
+sf::st_write(stem_map, "../data/stem_map.gpkg", append = FALSE)
+```

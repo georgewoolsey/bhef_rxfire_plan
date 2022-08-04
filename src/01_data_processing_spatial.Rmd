@@ -87,6 +87,20 @@ research_plots <- sf::st_read("../data/Black_Hills_StemMaps.shp") %>%
 # data structure of data
 research_plots %>% glimpse()
 
+# plot does not uniquely identify record
+length(unique(research_plots$plot)) == nrow(research_plots)
+
+# create id
+  research_plots <- research_plots %>% 
+    dplyr::group_by(plot) %>% 
+    dplyr::mutate(
+      plot_id = paste0(plot, "_", as.character(dplyr::row_number()))
+    ) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::relocate(plot_id)
+  
+  length(unique(research_plots$plot_id)) == nrow(research_plots)
+
 ```
 
 ## Load Stem Map data
@@ -110,34 +124,6 @@ stem_map <- sf::st_read("../data/BHEF_stem_map.shp") %>%
 
 # data structure of stem map data
 stem_map %>% glimpse()
-```
-
-### Stem Map Descriptive statistics.
-
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# descriptive stats
-kable(stem_map %>% sf::st_set_geometry(NULL) %>% 
-        dplyr::group_by(
-          unit
-        ) %>% 
-        dplyr::summarise(
-          plots = dplyr::n_distinct(plot)
-          , trees = dplyr::n_distinct(uidtree)
-          , min_DBHin = min(dbhin)
-          , max_DBHin = max(dbhin)
-          , mean_DBHin = mean(dbhin)
-          , QMDin = sqrt( sum(dbhin*dbhin) / n() )
-          , min_HTft = min(heightft)
-          , max_HTft = max(heightft)
-          , mean_HTft = mean(heightft)
-          , stdev_HTft = sd(heightft)
-        ) %>% 
-    dplyr::arrange(unit) 
-  , format = "html" 
-  , caption = "Tree Measurement Descriptive Statistics by Unit"
-  , digits = 2
-) %>% 
-kable_styling(font_size = 10)
 ```
 
 ## Load National Forests shapefile
@@ -179,8 +165,7 @@ kable_styling(font_size = 10)
   #make BHNF only dataset
     forests_bhnf <- forests %>% filter(region == "02" & nffid == "0471")
 
-  # save cleaned data for reading to R later
-    sf::st_write(forests_bhnf, "../data/forests_bhnf.gpkg", append = FALSE)
+  
 ```
 
 ## Load Experimental Forests shapefile
@@ -217,8 +202,7 @@ kable_styling(font_size = 10)
   # spatial join BHNF
     bhef_boundary <- sf::st_intersection(forests_bhnf %>% dplyr::select(nfslandunitid, nffid, nfslandunitname), exp_forests)
 
-  # save cleaned data for reading to R later
-    sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
+  
 ```
 
 ## Load FACTS Timber Harvests {#harvests}
@@ -247,20 +231,28 @@ Metadata file available [here](https://data.fs.usda.gov/geodata/edw/edw_resource
       sf::st_transform(crs = sf::st_crs(research_plots))
     
   # spatial join BHEF
+    # bhef_harvests <- sf::st_intersection(
+    #     bhef_boundary %>% 
+    #        dplyr::select(name, station, hectares, lead_scientist) %>% 
+    #        dplyr::rename_with(~ paste0("exp_forest_", .), -geometry) %>% 
+    #       # there are some plots outside of BHEF boundary
+    #       sf::st_buffer(2500)
+    #     , harvests)
     bhef_harvests <- sf::st_intersection(
-        bhef_boundary %>% 
-           dplyr::select(name, station, hectares, lead_scientist) %>% 
-           dplyr::rename_with(~ paste0("exp_forest_", .), -geometry) %>% 
-          # there are some plots outside of BHEF boundary
-          sf::st_buffer(2500)
+      # there are some plots outside of BHEF boundary
+        sf::st_union(
+            bhef_boundary
+            , sf::st_as_sfc(sf::st_bbox(research_plots)) %>% 
+                sf::st_transform(crs = sf::st_crs(research_plots)) 
+        ) %>% dplyr::select(geometry)
         , harvests)
-      
-# save cleaned data for reading to R later
-  sf::st_write(bhef_harvests, "../data/bhef_harvests.gpkg", append = FALSE)
+    
+
   
 # filter for last 15 years
 bhef_harvests_l15 <- bhef_harvests %>% dplyr::filter(year_id >= year(Sys.time()) - 15 ) %>% 
   dplyr::mutate(lab <- paste0(treatment_type_grp, " (", as.character(year_id), ")"))
+
 ```
 
 ### Harvests by treatment type
@@ -281,6 +273,7 @@ ggplot(.) +
   ) +
   labs(
       title = "Number Harvests Completed by Treatment Type (last 15 years)"
+      , subtitle = "within BHEF boundary and bounding box of research plot area"
     ) +
   xlab("# Harvests") +
   ylab("Treatment") +
@@ -292,8 +285,174 @@ ggplot(.) +
   )
 ```
 
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
 
-### FACTS Harvest Map with Research Plots
+## Join Research Plot to Harvest
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# attach harvest data to research plots
+research_plots_harvests <- sf::st_intersection(
+  research_plots
+  , bhef_harvests_l15 %>% 
+      dplyr::select(
+        activity_code
+        , activity_name
+        , treatment_type_grp
+        , suid
+        , date_compl
+        , year_id
+      ) %>% 
+      # dplyr::filter(treatment_type_grp %in% c("Commercial Thinning"
+      #                                         , "Overstory Removal Cut"
+      #                                         , "Single-tree/Group Selection Cut"
+      #                                         , "Patch Clearcut"
+      #       )) %>% 
+      dplyr::rename_with(~ paste0("harvest_", .), -geometry)
+  ) %>% 
+  dplyr::mutate(harvest_plot_areamsq = as.numeric(sf::st_area(.))) %>% 
+  sf::st_set_geometry(NULL) %>% 
+  dplyr::group_by(plot_id) %>% 
+  dplyr::arrange(
+    plot_id
+    , desc(harvest_plot_areamsq)
+    , harvest_date_compl
+  ) %>% 
+  dplyr::select(
+    plot_id
+    , dplyr::starts_with("harvest_")
+  ) %>% 
+  dplyr::mutate(
+    row_n = dplyr::row_number()
+  ) %>% 
+  dplyr::ungroup() %>% 
+  tidyr::pivot_wider(
+    id_cols = plot_id
+    , names_from = row_n
+    , values_from = !c(plot_id, row_n)
+    , names_sep = "_"
+  )
+
+# join to spatial data
+research_plots <- research_plots %>% 
+  left_join(research_plots_harvests, by = c("plot_id"="plot_id"))
+
+remove(research_plots_harvests)
+
+```
+
+## Join Stem Map to Research Plot & Harvest
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# attach harvest data to stem map
+stem_map_harvests <- sf::st_intersection(
+  stem_map
+  , bhef_harvests_l15 %>% 
+      dplyr::select(
+        activity_code
+        , activity_name
+        , treatment_type_grp
+        , suid
+        , date_compl
+        , year_id
+      ) %>% 
+      dplyr::rename_with(~ paste0("harvest_", .), -geometry)
+  ) %>% 
+  sf::st_set_geometry(NULL) %>% 
+  dplyr::group_by(uidtree) %>% 
+  dplyr::arrange(
+    uidtree
+    , harvest_date_compl
+  ) %>% 
+  dplyr::select(
+    uidtree
+    , dplyr::starts_with("harvest_")
+  ) %>% 
+  dplyr::mutate(
+    row_n = dplyr::row_number()
+  ) %>% 
+  dplyr::ungroup() %>% 
+  tidyr::pivot_wider(
+    id_cols = uidtree
+    , names_from = row_n
+    , values_from = !c(uidtree, row_n)
+    , names_sep = "_"
+  )
+
+# join to spatial data
+stem_map <- stem_map %>% 
+  left_join(stem_map_harvests, by = c("uidtree"="uidtree"))
+
+# join to research plot data
+temp_stem_map <- sf::st_intersection(
+    stem_map %>% dplyr::select(uidtree)
+    , research_plots %>% 
+        dplyr::select(plot_id, trt, harvest_activity_name_1, harvest_year_id_1, harvest_treatment_type_grp_1) %>% 
+        dplyr::rename_with(~ paste0("rplot_", .), -geometry)
+  ) %>% 
+  sf::st_set_geometry(NULL)
+
+stem_map <- stem_map %>% 
+  left_join(temp_stem_map, by = c("uidtree"="uidtree"))
+
+remove(list = c("stem_map_harvests", "temp_stem_map"))
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
+### Stem Map Descriptive statistics.
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# descriptive stats
+kable(stem_map %>% sf::st_set_geometry(NULL) %>% 
+        dplyr::group_by(
+          unit
+          , harvest_activity_name_1
+        ) %>% 
+        dplyr::summarise(
+          # plots = dplyr::n_distinct(plot)
+          trees = dplyr::n_distinct(uidtree)
+          , min_DBHin = min(dbhin)
+          , max_DBHin = max(dbhin)
+          , mean_DBHin = mean(dbhin)
+          , QMDin = sqrt( sum(dbhin*dbhin) / n() )
+          , min_HTft = min(heightft)
+          , max_HTft = max(heightft)
+          , mean_HTft = mean(heightft)
+          , stdev_HTft = sd(heightft)
+        ) %>% 
+    dplyr::arrange(unit, desc(trees)) 
+  , format = "html" 
+  , caption = "Tree Measurement Descriptive Statistics by Unit & Treatment"
+  , digits = 1
+  , col.names = c(
+    "unit"
+    , "treatment"
+    # , "# plots"
+    , "# trees"
+    , "min"
+    , "max"
+    , "mean"
+    , "QMD"
+    , "min"
+    , "max"
+    , "mean"
+      , "st.dev."
+  )
+  , align=rep('c', 5)
+) %>% 
+# kable_classic() %>%
+add_header_above(c(" " = 3, "DBH (in.)" = 3, "QMD (in.)" = 1, "Height (ft.)" = 4)) %>% 
+kable_material(c("striped", "hover")) %>%
+# column_spec(., 2, width = "20em") %>% 
+kable_styling(font_size = 11)
+
+```
+
+## Map Harvests, Research Plots, Stem Map
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # make map
@@ -328,8 +487,9 @@ mapview(bhef_harvests_l15
 ) +
 mapview(research_plots
         , zcol = "trt"
-        , col.regions = viridis::turbo(n=length(unique(research_plots$trt)))
+        , col.regions = viridis::mako(n=length(unique(research_plots$trt)), direction = -1)
         , lwd = 2
+        , col = "gray90"
         , alpha.regions = 0.8
         , label = c("trt")
         , legend = FALSE
@@ -338,89 +498,50 @@ mapview(research_plots
               , zcol = c(
                 "plot"
                 , "trt"
-                , "area"
+                , "harvest_activity_name_1"
+                , "harvest_year_id_1"
               )
               , row.numbers = FALSE
               , feature.id = FALSE
             )
+)  +
+mapview(stem_map
+  , zcol = "unit"
+  , col.regions = viridis::turbo(n=length(unique(stem_map$unit)), alpha = 0.8)
+    # RColorBrewer::brewer.pal(n = length(unique(stem_map$unit)), name = "RdYlBu")
+  , cex = 3.5
+  , label = c("unit")
+  , legend = FALSE
+    , popup = popupTable(
+        stem_map
+        , zcol = c(
+          "unit"
+          , "plot"
+          , "species"
+          , "tag"
+          , "heightft"
+          , "dbhin"
+          , "harvest_activity_name_1"
+          , "harvest_year_id_1"
+        )
+        , row.numbers = FALSE
+        , feature.id = FALSE
+      )
 )
+
 ```
 
 *Note, only harvests in last 15 years shown*
 
-```{r, warning=F, message=F, echo=FALSE, include=FALSE}
-gc()
-```
-
-## Join Research Plot to Harvest
-
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# attach harvest data to research plots
-research_plots_harvests <- sf::st_intersection(
-  research_plots
-  , bhef_harvests_l15 %>% 
-      dplyr::select(
-        activity_code
-        , activity_name
-        , treatment_type_grp
-        , suid
-        , date_compl
-        , year_id
-      ) %>% 
-      dplyr::filter(!treatment_type_grp %in% c("Sanitation Cut")) %>% 
-      dplyr::rename_with(~ paste0("harvest_", .), -geometry)
-)
-
-view(research_plots %>% st_set_geometry(NULL) %>% arrange(plot))
-view(research_plots_harvests %>% st_set_geometry(NULL) %>% arrange(plot))
-
-```
-
-
-
-### Stem Map
+## Write Out Data
 
 Make a map of the stem mapped trees.
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# map
-mapview(bhef_harvests_l15
-        , zcol = "treatment_type_grp"
-        , col.regions = viridis::viridis(n=length(unique(bhef_harvests_l15$treatment_type_grp)))
-        , alpha.regions = 0.6
-        , label = c("lab")
-        , legend = FALSE
-          , popup = popupTable(
-              bhef_harvests_l15
-              , zcol = c(
-                "year_id"
-                , "treatment_type_grp"
-                , "activity_name"
-              )
-              , row.numbers = FALSE
-              , feature.id = FALSE
-            )
-  )  +
-  mapview(stem_map
-    , zcol = "unit"
-    , col.regions = viridis::turbo(n=length(unique(stem_map$unit)), direction = -1, alpha = 0.8)
-      # RColorBrewer::brewer.pal(n = length(unique(stem_map$unit)), name = "RdYlBu")
-    , cex = 3.5
-    , label = c("unit")
-    , legend = FALSE
-      , popup = popupTable(
-          stem_map
-          , zcol = c(
-            "unit"
-            , "plot"
-            , "species"
-            , "tag"
-            , "heightft"
-            , "dbhin"
-          )
-          , row.numbers = FALSE
-          , feature.id = FALSE
-        )
-  )
-
+# save cleaned data for reading to R later
+sf::st_write(forests_bhnf, "../data/forests_bhnf.gpkg", append = FALSE)
+sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
+sf::st_write(bhef_harvests, "../data/bhef_harvests.gpkg", append = FALSE)
+sf::st_write(research_plots, "../data/research_plots.gpkg", append = FALSE)
+sf::st_write(stem_map, "../data/stem_map.gpkg", append = FALSE)
 ```
