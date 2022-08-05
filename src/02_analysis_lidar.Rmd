@@ -147,12 +147,15 @@ gc()
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # list laz files
-lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
+  lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
+# change projection of DEM  
+  bhef_elev_reproj <- bhef_elev %>% stars::st_warp(crs = sf::st_crs( lidR::readLAS(lazs[1], select = "xyz") ))
 ######################################################
 # read laz files
 ######################################################
   # If several files are read at once the returned LAS object is considered as one LAS file.
-  las <- lidR::readLAS(lazs[1], select = "xyz")  # load XYZ only
+  # las <- lidR::readLAS(c(lazs[1],lazs[2]), select = "xyz")  # load XYZ only
+  las <- lidR::readLAS(lazs[2], select = "xyz")  # load XYZ only
   # lidR::las_check(las)
   # remove duplicate points
   las <- lidR::filter_duplicates(las)
@@ -162,26 +165,118 @@ lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
   # temp_plot <- plot(las, color = "Z", breaks = "quantile", bg = "white")
   # temp_plot
   # # add_treetops3d(temp_plot, ttops)
-# change projection of DEM  
-  bhef_elev_reproj <- bhef_elev %>% stars::st_warp(crs = sf::st_crs(las))
 ######################################################
 # remove outliers
 ######################################################
   # Use Statistical Outliers Removal (SOR)
-  # plot(las, color = "Z", breaks = "quantile", bg = "white")
-  las <- lidR::classify_noise(las, sor(k = 15, m = 3))
-  plot(las, color = "Classification", bg = "white", size = 3)
+    # k = number of neighbors
+    # m = multiplier in : avg distance + m * std deviation
+    las <- lidR::classify_noise(las, sor(k = 15, m = 7))
+    # plot(las, color = "Classification", bg = "white", size = 3)
   # Remove outliers using filter_poi()
-  las <- lidR::filter_poi(las, Classification != LASNOISE)
-  # plot(las, color = "Z", breaks = "quantile", bg = "white")
-  #repeat process with Isolated Voxels Filter IVF
-  las <- lidR::classify_noise(las, ivf(res = 5, n = 6))
-  # plot(las, color = "Classification", bg = "white", size = 3)
-  # Remove outliers using lidR::filter_poi()
-  las <- lidR::filter_poi(las, Classification != LASNOISE)
-  plot(las, color = "Z", bg = "white")
-
-
+    las <- lidR::filter_poi(las, Classification != LASNOISE)
+    # plot(las, color = "Z", breaks = "quantile", bg = "white")
+  # #repeat process with Isolated Voxels Filter IVF
+  #   las <- lidR::classify_noise(las, ivf(res = 5, n = 6))
+  #   # plot(las, color = "Classification", bg = "white", size = 3)
+  # # Remove outliers using lidR::filter_poi()
+  #   las <- lidR::filter_poi(las, Classification != LASNOISE)
+    # plot(las, color = "Z", breaks = "quantile", bg = "white")
+# #####################################################
+# Ground classification
+# !!!!!!!!!!!!!!!!!!!!!!!!!! This is computationally intensive :'(
+# #####################################################
+# ##################################################
+# Progressive Morphological Filter The implementation of PMF algorithm in lidR
+# is based on the method described in Zhang et al. (2003)
+# ##################################################
+# # # b numeric. This is the parameter b in Zhang et al. (2003) (eq. 4 and 5).
+# # # dh0 numeric. This is dh0 in Zhang et al. (2003) (eq. 7).
+# # # dhmax numeric. This is dhmax in Zhang et al. (2003) (eq. 7).
+# # # s numeric. This is s in Zhang et al. (2003) (eq. 7).
+# # # max_ws numeric. Maximum window size to be used in filtering ground returns. This
+# # # limits the number of windows created.
+# # # exp logical. The window size can be increased linearly or exponentially (eq. 4 or 5).
+# # lidR::util_makeZhangParam(
+# #   b = 2,
+# #   dh0 = 0.2,
+# #   dhmax = 210,
+# #   s = 1.2,
+# #   max_ws = 20,
+# #   exp = FALSE
+# # )
+# las <- lidR::classify_ground(las, algorithm = pmf(
+#   ws = lidR::util_makeZhangParam()$ws
+#   , th = lidR::util_makeZhangParam()$th
+#   )
+# )
+######################################################
+# Height normalization using DEM 
+    # could create own DEM with lidar data ... 
+    # but will use out of the box product for now
+######################################################
+  # subtract DEM from lidar returns
+    nlas <- las - bhef_elev_reproj
+  # correct for below ground returns
+    # nlas@data$Z <- ifelse(ceiling(nlas@data$Z) == 0 | floor(nlas@data$Z) == 0, 0, nlas@data$Z)
+    # nlas <- filter_poi(nlas, Z >= 0) # remove below ground points
+    nlas@data$Z <- ifelse(nlas@data$Z <= 0, 0, nlas@data$Z)
+  # update classification
+    nlas@data$Classification <- ifelse(nlas@data$Z==0, 2, nlas@data$Classification)
+    # nlas <- filter_poi(nlas, Z <= quantile(nlas@data[which(Classification==1),]$Z, .9995) )
+    # plot(nlas, color = "Z", breaks = "pretty", bg = "white")
+    # plot(lidR::filter_ground(nlas), color = "Classification", bg = "white")
+    # summary(nlas$Z)
+    # table(nlas$Classification)
+# ######################################################
+# # Height normalization using point cloud interpolation
+# # !!!!!! must run ground classification above first
+# ######################################################
+#   # point cloud normalization using interpolation
+#     nlas <- normalize_height(las, knnidw())
+#     # plot(nlas, color = "Z", breaks = "pretty", bg = "white")
+#     # plot(lidR::filter_ground(nlas), color = "Classification", bg = "white")
+#     # summary(nlas$Z)
+#     # table(nlas$Classification)
+######################################################
+# Canopy Height model
+######################################################
+  chm <- lidR::rasterize_canopy(
+      nlas
+      , res = 1
+      , p2r(subcircle = 0.0
+            # , na.fill = tin()
+            , na.fill = knnidw(
+              k = 10
+              , p = 2
+              , rmax = 5
+            )
+        )
+    )
+  # chm_df <- as.data.frame(chm, xy = TRUE)
+  # plot
+  col <- rev( brewer.pal(n = 11, "RdYlBu") ) # height.colors(20)
+  plot(chm, col = col, bg = "white")
+  # fill na's and smooth the CHM with the "raster" package
+  w <- matrix(1, 3, 3)
+  smoothed <- focal(chm, w, fun = mean, na.rm = TRUE)
+  col <- rev( brewer.pal(n = 11, "RdYlBu") ) # height.colors(20)
+  plot(smoothed, col = col, bg="white"
+       , main = "Canopy Height Model based on aerial imagery collected Sept. 1957\nWilm & Dunford (1948) Experimental Plot Area\nFraser Experimental Forest"
+       , xlab = "UTM Easting Coordinate (m)"
+       , ylab = "UTM Northing Coordinate (m)"
+       , legend=FALSE
+  )
+  plot(smoothed, col = col, bg="white"
+       , legend.only=TRUE,
+       legend.width=1, legend.shrink=0.75,
+       legend.args=list(text='Height (m)', side=4, font=2, line=2.5, cex=0.8)
+  )
+  
+  hist(nlas@data[which(Classification==1),]$Z
+       , breaks = seq(0, round(max(nlas@data[which(Classification==1),]$Z))+round(sd(nlas@data[which(Classification==1),]$Z), round(sd(nlas@data[which(Classification==1),]$Z))))
+       , main = "Distribution of normalized non-ground point heights"
+       , xlab = "Height (m)")
 
 
 ```
