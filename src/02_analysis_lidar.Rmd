@@ -16,7 +16,7 @@ library(lwgeom)
 library(mapview) #Interactive maps
 library(leafpop) #map html popup
 library(lidR) # lidar data
-library(rlas) # lidar data
+library(elevatr) # elevation data (DEMs)
 # library(spatstat) #point pattern analysis
 
 
@@ -109,13 +109,25 @@ stem_map <- sf::st_read("../data/stem_map.gpkg")
 ## Load lidar Data
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# read in elevation data
+# z =14 is highest resolution (~6.8m)
+if(file.exists("../data/bhef_elev.tif") == FALSE){
+  elev <- elevatr::get_elev_raster(bhef_boundary, z = 14)
+  # sf::st_crs(elev) == sf::st_crs(bhef_boundary)
+  bhef_elev <- stars::st_as_stars(elev)
+    # sf::st_transform(crs = sf::st_crs(bhef_boundary))
+  # save
+  stars::write_stars(bhef_elev, "../data/bhef_elev.tif", append = FALSE)
+}else{
+  bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
+}
+plot(bhef_elev[bhef_boundary], axes = TRUE)
+
+
+# list laz files
 lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
-
 # If several files are read at once the returned LAS object is considered as one LAS file.
-# las <- lidR::readLAS(lazs[1], select = "xyz")  # load XYZ only
-las <- lidR::readLAS(lazs[2])  # load XYZ only
-las <- rlas::read.las(lazs[2])
-
+las <- lidR::readLAS(lazs[1], select = "xyz")  # load XYZ only
 
 
 
