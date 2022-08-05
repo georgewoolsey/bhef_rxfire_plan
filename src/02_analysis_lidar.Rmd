@@ -132,8 +132,11 @@ ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
       , subtitle = sf::st_crs(bhef_elev)$input
     ) +
   theme_bw() +
+  theme(
+    axis.text = element_text(size = 8)
+  ) +
   guides(
-    fill = guide_legend(title="elev. (m)")
+    fill = guide_legend(title="Elev. (m)")
   )
 
 ```
@@ -145,7 +148,15 @@ gc()
 
 ## Load Lidar Data
 
+See [Zhen et al. (2014)](https://www.mdpi.com/2072-4292/6/1/555/pdf-vor) for variable window size in ITD.
+
+```{r, warning=F, message=F, include=FALSE, eval=FALSE}
+
+```
+
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+
+
 # list laz files
   lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
 # change projection of DEM  
@@ -218,14 +229,19 @@ gc()
   # subtract DEM from lidar returns
     nlas <- las - bhef_elev_reproj
   # correct for below ground returns
-    # nlas@data$Z <- ifelse(ceiling(nlas@data$Z) == 0 | floor(nlas@data$Z) == 0, 0, nlas@data$Z)
+    nlas@data$Z <- ifelse(
+        ceiling(nlas@data$Z) == 0 
+        | floor(nlas@data$Z) == 0
+        | nlas@data$Z <= 0
+      , 0, nlas@data$Z
+    )
     # nlas <- filter_poi(nlas, Z >= 0) # remove below ground points
     nlas@data$Z <- ifelse(nlas@data$Z <= 0, 0, nlas@data$Z)
   # update classification
     nlas@data$Classification <- ifelse(nlas@data$Z==0, 2, nlas@data$Classification)
-    # nlas <- filter_poi(nlas, Z <= quantile(nlas@data[which(Classification==1),]$Z, .9995) )
+  # filter out top 0.2% heights
+    nlas <- filter_poi(nlas, Z <= stats::quantile((nlas@data %>% dplyr::filter(Classification==1))$Z, 0.998))
     # plot(nlas, color = "Z", breaks = "pretty", bg = "white")
-    # plot(lidR::filter_ground(nlas), color = "Classification", bg = "white")
     # summary(nlas$Z)
     # table(nlas$Classification)
 # ######################################################
@@ -252,33 +268,50 @@ gc()
               , rmax = 5
             )
         )
-    )
-  # chm_df <- as.data.frame(chm, xy = TRUE)
+    ) %>% 
+    stars::st_as_stars() %>% 
+    stars::st_warp(crs = sf::st_crs(bhef_boundary))
   # plot
-  col <- rev( brewer.pal(n = 11, "RdYlBu") ) # height.colors(20)
-  plot(chm, col = col, bg = "white")
-  # fill na's and smooth the CHM with the "raster" package
-  w <- matrix(1, 3, 3)
-  smoothed <- focal(chm, w, fun = mean, na.rm = TRUE)
-  col <- rev( brewer.pal(n = 11, "RdYlBu") ) # height.colors(20)
-  plot(smoothed, col = col, bg="white"
-       , main = "Canopy Height Model based on aerial imagery collected Sept. 1957\nWilm & Dunford (1948) Experimental Plot Area\nFraser Experimental Forest"
-       , xlab = "UTM Easting Coordinate (m)"
-       , ylab = "UTM Northing Coordinate (m)"
-       , legend=FALSE
-  )
-  plot(smoothed, col = col, bg="white"
-       , legend.only=TRUE,
-       legend.width=1, legend.shrink=0.75,
-       legend.args=list(text='Height (m)', side=4, font=2, line=2.5, cex=0.8)
-  )
+  ggplot() +
+    stars::geom_stars(data = chm) +
+    scale_fill_viridis_c(option = "mako", alpha = 0.9) +
+    labs(
+      title = "BHEF Canopy Height Model"
+      , subtitle = sf::st_crs(chm)$input
+    ) +
+    theme_bw() +
+    theme(
+      axis.text = element_text(size = 8)
+    ) +
+    guides(
+      fill = guide_legend(title="Hgt. (m)")
+    )
+######################################################
+# Individual Tree Detection (ITD)
+######################################################
+# local maximum filtering (LMF) with variable window size
+  ws_fn <- function(x) {x * 0.1 + 3}
+  ttops <- lidR::locate_trees(nlas, lmf(ws = ws_fn)) %>% 
+    sf::st_geometry() %>% 
+    sf::st_transform(crs = sf::st_crs(bhef_boundary))
+
+  # plot
+  ggplot() +
+    stars::geom_stars(data = chm) +
+    geom_sf(data = ttops, color = viridis::viridis(n=1, direction = -1), size = 0.5) +
+    scale_fill_viridis_c(option = "mako", alpha = 0.9) +
+    labs(
+      title = "BHEF Canopy Height Model"
+      , subtitle = sf::st_crs(chm)$input
+    ) +
+    theme_bw() +
+    theme(
+      axis.text = element_text(size = 8)
+    ) +
+    guides(
+      fill = guide_legend(title="Hgt. (m)")
+    )
   
-  hist(nlas@data[which(Classification==1),]$Z
-       , breaks = seq(0, round(max(nlas@data[which(Classification==1),]$Z))+round(sd(nlas@data[which(Classification==1),]$Z), round(sd(nlas@data[which(Classification==1),]$Z))))
-       , main = "Distribution of normalized non-ground point heights"
-       , xlab = "Height (m)")
-
-
 ```
 
 ## Map Harvests, Research Plots, Stem Map
