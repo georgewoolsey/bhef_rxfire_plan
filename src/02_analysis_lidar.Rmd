@@ -106,7 +106,9 @@ research_plots <- sf::st_read("../data/research_plots.gpkg")
 stem_map <- sf::st_read("../data/stem_map.gpkg")
 ```
 
-## Load lidar Data
+## Load Elevation Data
+
+Using `elevatr::get_elev_raster` to get a digital elevation model (DEM) raster (~6.8m resolution).
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # read in elevation data
@@ -121,24 +123,68 @@ if(file.exists("../data/bhef_elev.tif") == FALSE){
 }else{
   bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
 }
-plot(bhef_elev[bhef_boundary], axes = TRUE)
 
-
-# list laz files
-lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
-# If several files are read at once the returned LAS object is considered as one LAS file.
-las <- lidR::readLAS(lazs[1], select = "xyz")  # load XYZ only
-
-
-
+# plot
+ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
+  scale_fill_viridis_c(option = "cividis", alpha = 0.9, na.value = "transparent") +
+  labs(
+      title = "BHEF Elevation Map"
+      , subtitle = sf::st_crs(bhef_elev)$input
+    ) +
+  theme_bw() +
+  guides(
+    fill = guide_legend(title="elev. (m)")
+  )
 
 ```
 
 ```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(list = c("urls", "elev", "f_nm", "hey_dir", "tifs"))
 gc()
 ```
 
+## Load Lidar Data
 
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# list laz files
+lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
+######################################################
+# read laz files
+######################################################
+  # If several files are read at once the returned LAS object is considered as one LAS file.
+  las <- lidR::readLAS(lazs[1], select = "xyz")  # load XYZ only
+  # lidR::las_check(las)
+  # remove duplicate points
+  las <- lidR::filter_duplicates(las)
+  # lidR::las_check(las)
+  # summary(las$Z)
+  # sf::st_crs(las)
+  # temp_plot <- plot(las, color = "Z", breaks = "quantile", bg = "white")
+  # temp_plot
+  # # add_treetops3d(temp_plot, ttops)
+# change projection of DEM  
+  bhef_elev_reproj <- bhef_elev %>% stars::st_warp(crs = sf::st_crs(las))
+######################################################
+# remove outliers
+######################################################
+  # Use Statistical Outliers Removal (SOR)
+  # plot(las, color = "Z", breaks = "quantile", bg = "white")
+  las <- lidR::classify_noise(las, sor(k = 15, m = 3))
+  plot(las, color = "Classification", bg = "white", size = 3)
+  # Remove outliers using filter_poi()
+  las <- lidR::filter_poi(las, Classification != LASNOISE)
+  # plot(las, color = "Z", breaks = "quantile", bg = "white")
+  #repeat process with Isolated Voxels Filter IVF
+  las <- lidR::classify_noise(las, ivf(res = 5, n = 6))
+  # plot(las, color = "Classification", bg = "white", size = 3)
+  # Remove outliers using lidR::filter_poi()
+  las <- lidR::filter_poi(las, Classification != LASNOISE)
+  plot(las, color = "Z", bg = "white")
+
+
+
+
+```
 
 ## Map Harvests, Research Plots, Stem Map
 
