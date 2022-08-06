@@ -143,16 +143,31 @@ ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
 ```
 
 ```{r, warning=F, message=F, echo=FALSE, include=FALSE}
-remove(list = c("urls", "elev", "f_nm", "hey_dir", "tifs"))
+remove(list = c("urls", "elev", "f_nm", "hey_dir", "tifs", "r", "x"))
 gc()
 ```
 
 ## Load Lidar Data
 
+Use the `lidR` package for manipulating and visualizing point cloud data. See the very [helpful book](https://r-lidar.github.io/lidRbook/index.html) by Roussel, J.R., Goodbody, T.R.H., and Tompalski P. (2021) for more information.
+
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # list laz files
   lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
-# change projection of DEM  
+# change projection of DEM 
+  # # creating a new regular grid in a new CRS
+  # newgrid <- bhef_boundary %>% 
+  #   sf::st_transform(crs = sf::st_crs( lidR::readLAS(lazs[1], select = "xyz") )) %>% 
+  #   sf::st_bbox() %>%
+  #   stars::st_as_stars()
+  # # set up old grid to warp back
+  # oldgrid <- bhef_boundary %>% 
+  #   sf::st_bbox() %>%
+  #   stars::st_as_stars()
+  # # warping the old raster to the new grid
+  # bhef_elev_reproj <- bhef_elev %>%
+  #   stars::st_warp(newgrid)
+  
   bhef_elev_reproj <- bhef_elev %>% stars::st_warp(crs = sf::st_crs( lidR::readLAS(lazs[1], select = "xyz") ))
 ######################################################
 # read laz files
@@ -214,6 +229,11 @@ gc()
 #   , th = lidR::util_makeZhangParam()$th
 #   )
 # )
+```
+
+### Height normalization using DEM 
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 ######################################################
 # Height normalization using DEM 
     # could create own DEM with lidar data ... 
@@ -247,26 +267,57 @@ gc()
 #     # plot(lidR::filter_ground(nlas), color = "Classification", bg = "white")
 #     # summary(nlas$Z)
 #     # table(nlas$Classification)
+    
+# descriptive stats
+kable(nlas@data %>% 
+        dplyr::group_by(
+          Classification
+        ) %>% 
+        dplyr::summarise(
+          # plots = dplyr::n_distinct(plot)
+          points = dplyr::n()
+          , min_z = min(Z)
+          , max_z = max(Z)
+          , mean_z = mean(Z)
+          , median_z = median(Z)
+          , stdev_z = sd(Z)
+        ) %>% 
+    dplyr::arrange(Classification) %>% 
+    dplyr::mutate(
+      Classification = dplyr::case_when(
+        Classification == 1 ~ "Surface"
+        , Classification == 2 ~ "Ground"
+        , TRUE ~ "Other"
+      )
+    )
+  , format = "html" 
+  , caption = "Point Cloud Summary Statistics for Return Height (Z)"
+  , digits = 1
+  , col.names = c(
+    "Classification"
+    , "points"
+    , "min"
+    , "max"
+    , "mean"
+    , "median"
+    , "st.dev."
+  )
+  , align=rep('c', 5)
+) %>% 
+# kable_classic() %>%
+add_header_above(c(" " = 2, "Point Return Height (m)" = 5)) %>% 
+kable_material(c("striped", "hover")) %>%
+# column_spec(., 2, width = "20em") %>% 
+kable_styling(font_size = 11) 
+```
+
+### Canopy Height model
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 ######################################################
 # Canopy Height model
 ######################################################
-  chm <- lidR::rasterize_canopy(
-      nlas
-      , res = 1
-      , p2r(subcircle = 0.0
-            # , na.fill = tin()
-            , na.fill = knnidw(
-              k = 10
-              , p = 2
-              , rmax = 5
-            )
-        )
-      # , pkg = "stars"
-    ) %>% 
-    stars::st_as_stars() %>%
-    stars::st_warp(crs = sf::st_crs(bhef_boundary))
-    
-    chm_smooth <- lidR::rasterize_canopy(
+    chm <- lidR::rasterize_canopy(
       nlas
       , res = 1
       , p2r(subcircle = 0.0
@@ -280,43 +331,41 @@ gc()
       , pkg = "terra"
     ) 
     
+    # smooth chm pixels with median value in 3x3 matrix
     kernel <- matrix(1,3,3)
-    chm_smooth <- terra::focal(chm_smooth, w = kernel, fun = median, na.rm = TRUE) %>% 
+    chm_smooth <- terra::focal(chm, w = kernel, fun = median, na.rm = TRUE) %>% 
+      stars::st_as_stars() %>%
+      stars::st_warp(crs = sf::st_crs(bhef_boundary)) 
+    # %>% 
+    #   sf::st_transform(crs = sf::st_crs(bhef_boundary))
+    # non smoothed
+    chm <- chm %>% 
       stars::st_as_stars() %>%
       stars::st_warp(crs = sf::st_crs(bhef_boundary))
     
-    
   # plot
   ggplot() +
-    stars::geom_stars(data = chm) +
+    stars::geom_stars(data = chm_smooth) +
+    geom_sf(data = sf::st_crop(bhef_boundary, sf::st_bbox(chm_smooth)), alpha = 0, lwd = 0) +
     scale_fill_viridis_c(option = "mako", alpha = 0.9) +
     labs(
       title = "BHEF Canopy Height Model"
-      , subtitle = sf::st_crs(chm)$input
+      , subtitle = sf::st_crs(chm_smooth)$input
     ) +
     theme_bw() +
     theme(
+      # legend.position = "bottom"
+      # , legend.direction = "horizontal"
       axis.text = element_text(size = 8)
     ) +
     guides(
       fill = guide_legend(title="Hgt. (m)")
     )  
-  
-  # plot
-  ggplot() +
-    stars::geom_stars(data = chm_smooth) +
-    scale_fill_viridis_c(option = "mako", alpha = 0.9) +
-    labs(
-      title = "BHEF Canopy Height Model"
-      , subtitle = sf::st_crs(chm)$input
-    ) +
-    theme_bw() +
-    theme(
-      axis.text = element_text(size = 8)
-    ) +
-    guides(
-      fill = guide_legend(title="Hgt. (m)")
-    )
+```
+
+### Individual Tree Detection (ITD)
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 ######################################################
 # Individual Tree Detection (ITD)
 ######################################################
@@ -332,18 +381,16 @@ gc()
       return(y)
   }
   # ITD on CHM
-  ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)) %>% 
-    sf::st_geometry() %>% 
-    sf::st_transform(crs = sf::st_crs(bhef_boundary))
+  ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn))
     
   # plot
   ggplot() +
-    stars::geom_stars(data = chm) +
-    geom_sf(data = ttops, color = viridis::viridis(n=1, direction = -1), alpha = 0.6, shape = ".") +
+    stars::geom_stars(data = chm_smooth) +
+    geom_sf(data = ttops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
     scale_fill_viridis_c(option = "mako", alpha = 0.9) +
     labs(
-      title = "BHEF Canopy Height Model with Tree Tops"
-      , subtitle = sf::st_crs(chm)$input
+      title = "BHEF Canopy Height Model with Tree Tops Identified (yellow)"
+      , subtitle = sf::st_crs(chm_smooth)$input
     ) +
     theme_bw() +
     theme(
@@ -353,15 +400,49 @@ gc()
       fill = guide_legend(title="Hgt. (m)")
     )
   
-  hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
-  add_treetops3d(hey_plot, ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
+  # height range of tree tops
+  # !!!!!!!!!!!!!!!!!!make hist
   
-# apply itd to smoothed kernel chm?
-  methods(class = "stars")
-  
+  # hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
+  # add_treetops3d(hey_plot, ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
 ```
 
+### Individual Tree Segmentation (ITS)
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+######################################################
+# Individual Tree Segmentation (ITS)
+######################################################
+algo <- lidR::dalponte2016(chm_smooth, ttops)
+crowns <- algo()
+
+plot(crowns, col = pastel.colors(200))
+# 
+# # plot
+#   ggplot() +
+#     stars::geom_stars(data = crowns) +
+#     geom_sf(data = ttops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
+#     # scale_fill_viridis_c(option = "turbo", alpha = 0.7) +
+#     labs(
+#       title = "BHEF Individual Tree Crowns (tree tops in yellow)"
+#       , subtitle = sf::st_crs(crowns)$input
+#     ) +
+#     theme_bw() +
+#     theme(
+#       legend.position = "none"
+#       , axis.text = element_text(size = 8)
+#     )
+  
+
+
+```
+
+
 ```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE}
+# apply itd to smoothed kernel chm?
+  methods(class = "stars")
+
+
 # polygon_list = list(rbind(c(-1, 1), c(-1, -1), c(1, -1), c(1, 1), c(-1, 1)))
   polygon_list = list(rbind(
     # c(x, y, z)
