@@ -354,7 +354,7 @@ gc()
     )
   
   hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
-  add_treetops3d(hey_plot, ttops)
+  add_treetops3d(hey_plot, ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
   
 # apply itd to smoothed kernel chm?
   methods(class = "stars")
