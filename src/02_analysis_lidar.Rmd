@@ -17,6 +17,7 @@ library(mapview) #Interactive maps
 library(leafpop) #map html popup
 library(lidR) # lidar data
 library(elevatr) # elevation data (DEMs)
+library(terra) # raster math
 # library(spatstat) #point pattern analysis
 
 
@@ -264,9 +265,46 @@ gc()
     ) %>% 
     stars::st_as_stars() %>%
     stars::st_warp(crs = sf::st_crs(bhef_boundary))
+    
+    chm_smooth <- lidR::rasterize_canopy(
+      nlas
+      , res = 1
+      , p2r(subcircle = 0.0
+            # , na.fill = tin()
+            , na.fill = knnidw(
+              k = 10
+              , p = 2
+              , rmax = 5
+            )
+        )
+      , pkg = "terra"
+    ) 
+    
+    kernel <- matrix(1,3,3)
+    chm_smooth <- terra::focal(chm_smooth, w = kernel, fun = median, na.rm = TRUE) %>% 
+      stars::st_as_stars() %>%
+      stars::st_warp(crs = sf::st_crs(bhef_boundary))
+    
+    
   # plot
   ggplot() +
     stars::geom_stars(data = chm) +
+    scale_fill_viridis_c(option = "mako", alpha = 0.9) +
+    labs(
+      title = "BHEF Canopy Height Model"
+      , subtitle = sf::st_crs(chm)$input
+    ) +
+    theme_bw() +
+    theme(
+      axis.text = element_text(size = 8)
+    ) +
+    guides(
+      fill = guide_legend(title="Hgt. (m)")
+    )  
+  
+  # plot
+  ggplot() +
+    stars::geom_stars(data = chm_smooth) +
     scale_fill_viridis_c(option = "mako", alpha = 0.9) +
     labs(
       title = "BHEF Canopy Height Model"
@@ -294,11 +332,10 @@ gc()
       return(y)
   }
   # ITD on CHM
-  ttops <- lidR::locate_trees(chm, lmf(ws = ws_fn)) %>% 
+  ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)) %>% 
     sf::st_geometry() %>% 
-    sf::st_transform(crs = sf::st_crs(bhef_boundary)) %>% 
+    sf::st_transform(crs = sf::st_crs(bhef_boundary))
     
-
   # plot
   ggplot() +
     stars::geom_stars(data = chm) +
@@ -316,9 +353,16 @@ gc()
       fill = guide_legend(title="Hgt. (m)")
     )
   
-  # ttops %>% dplyr::filter(Z >= 2)
+  hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
+  add_treetops3d(hey_plot, ttops)
   
-  # polygon_list = list(rbind(c(-1, 1), c(-1, -1), c(1, -1), c(1, 1), c(-1, 1)))
+# apply itd to smoothed kernel chm?
+  methods(class = "stars")
+  
+```
+
+```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE}
+# polygon_list = list(rbind(c(-1, 1), c(-1, -1), c(1, -1), c(1, 1), c(-1, 1)))
   polygon_list = list(rbind(
     # c(x, y, z)
     c(sf::st_bbox(bhef_boundary)[1], sf::st_bbox(bhef_boundary)[4]) # upper left
@@ -336,12 +380,6 @@ gc()
     scale_fill_viridis_c(option = "cividis", alpha = 0.9, na.value = "transparent") +
     theme_bw()
   
-  
-  
-  # st_polygon(c(-1,-1), c(1,-1), c(1,1), c(-1,1), c(-1,-1), dim = "XYZ")
-  
-  
-  plot(nlas, color = "Z", breaks = "pretty", bg = "white")
   
 ```
 
