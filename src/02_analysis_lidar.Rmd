@@ -12,6 +12,7 @@ library(viridis)
 library(kableExtra)
 # spatial
 library(sf)
+library(stars)
 library(lwgeom) 
 library(mapview) #Interactive maps
 library(leafpop) #map html popup
@@ -309,6 +310,8 @@ add_header_above(c(" " = 2, "Point Return Height (m)" = 5)) %>%
 kable_material(c("striped", "hover")) %>%
 # column_spec(., 2, width = "20em") %>% 
 kable_styling(font_size = 11) 
+    
+# ggplot() + geom_histogram(data = (nlas@data %>% dplyr::filter(Classification == 1)), aes(Z), binwidth = 1)
 ```
 
 ### Canopy Height model
@@ -345,7 +348,7 @@ kable_styling(font_size = 11)
     
   # plot
   ggplot() +
-    stars::geom_stars(data = chm_smooth) +
+    stars::geom_stars(data = chm_smooth %>% dplyr::filter(values >=2)) +
     geom_sf(data = sf::st_crop(bhef_boundary, sf::st_bbox(chm_smooth)), alpha = 0, lwd = 0) +
     scale_fill_viridis_c(option = "mako", alpha = 0.9) +
     labs(
@@ -361,6 +364,36 @@ kable_styling(font_size = 11)
     guides(
       fill = guide_legend(title="Hgt. (m)")
     )  
+
+xxx <- chm_smooth %>% 
+  # create classes based on Steel et al. 2021
+  dplyr::mutate(
+    veg_class = dplyr::case_when(
+      values > 8 ~ 3 # canopy
+      , values >= 2 ~ 2 # subcanopy
+      , values >= 1 ~ 1 # understory
+      , TRUE ~ 0 # ground
+    )
+  ) %>% 
+  merge() %>% 
+  setNames("z") %>%
+  st_set_dimensions(names = c("x", "y", "band")) %>% 
+  # select only the class band
+  dplyr::slice(band, 2) %>% 
+  # convert to vector data and merge polygons with identical values
+  sf::st_as_sf(as_points = FALSE, merge = TRUE) %>% 
+  # transform to same crs as rest of data
+  sf::st_transform(crs = st_crs(bhef_boundary)) 
+
+names(xxx)[1] = "veg_class"
+
+ggplot() + 
+  geom_sf(data = xxx, aes(fill = as.factor(veg_class)), lwd = 0 ) + 
+  scale_fill_viridis_d() + 
+  theme_bw()
+  
+
+  
 ```
 
 ### Individual Tree Detection (ITD)
@@ -405,6 +438,7 @@ kable_styling(font_size = 11)
   
   # hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
   # add_treetops3d(hey_plot, ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
+  # ?lidR::pixel_metrics()
 ```
 
 ### Individual Tree Segmentation (ITS)
