@@ -30,7 +30,7 @@ library(terra) # raster math
 sf::sf_use_s2(FALSE)
 ```
 
-## Download Data From Nat'l Map
+## Download Lidar Data From Nat'l Map
 
 The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP) - Lidar, IfSAR" data available marked as "Lidar Point Cloud (LPC)". This download file list was placed in the `data` folder where the code below utilizes it to download data. The "thumbnail" option in the Nat'l Map was used to determine that the "Fugro" data will suffice to cover the BHEF area. Also, downloaded NAIP imagery while had ROI drawn in Nat'l Map.
 
@@ -75,26 +75,6 @@ urls <- read.delim("../data/usgs_lidar_data.txt", header = FALSE) %>%
   }
 ```
 
-NAIP imagery was downloaded from the [USGS Earth Explorer](https://earthexplorer.usgs.gov/).
-
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
-## Load NAIP Imagery
-
-# load with stars
-tifs <- list.files("../data/naip/", pattern = "\\.tif$", full.names = TRUE)
-
-# x <- stars::read_stars(imgs[1])
-x <- stars::read_stars(tifs[1])
-plot(x %>% dplyr::slice(band, 1), axes = TRUE)
-
-r = stars::st_rgb(x[,,,c(1:3)], use_alpha = FALSE)
-
-# ggplot() + 
-#   stars::geom_stars(data = r) +
-#   scale_fill_identity()
-
-```
-
 ## Load Vector Data
 
 Spatial data was loaded and cleaned in [prior chapter](#vector_data). 
@@ -106,6 +86,7 @@ bhef_boundary <- sf::st_read("../data/bhef_boundary.gpkg")
 bhef_harvests <- sf::st_read("../data/bhef_harvests.gpkg")
 research_plots <- sf::st_read("../data/research_plots.gpkg")
 stem_map <- sf::st_read("../data/stem_map.gpkg")
+rx_fire <- sf::st_read("../data/rx_fire.gpkg")
 ```
 
 ## Load Elevation Data
@@ -178,8 +159,8 @@ Use the `lidR` package for manipulating and visualizing point cloud data. See th
 # read laz files
 ######################################################
   # If several files are read at once the returned LAS object is considered as one LAS file.
-  # las <- lidR::readLAS(c(lazs[1],lazs[2]), select = "xyz")  # load XYZ only
-  las <- lidR::readLAS(lazs[2], select = "xyz")  # load XYZ only
+  # las <- lidR::readLAS(lazs[2], select = "xyz")  # load XYZ only
+  las <- lidR::readLAS(lazs, select = "xyz")  # load XYZ only
   # lidR::las_check(las)
   # remove duplicate points
   las <- lidR::filter_duplicates(las)
@@ -511,10 +492,10 @@ Segment the canopy height model raster grid as individual trees. Create a vector
 # implements an algorithm for tree segmentation based on 
   # Dalponte and Coomes (2016) algorithm (see reference). 
   # This is a seeds + growing region algorithm.
-  algo <- lidR::dalponte2016(chm = chm_smooth, treetops = tree_tops, th_tree = 2)
+  algo <- lidR::dalponte2016(chm = chm, treetops = tree_tops, th_tree = 2)
   crowns_st <- algo()
 # quick plot
-  plot(crowns_st, col = lidR::pastel.colors(200), main = "Individual Tree Crowns")
+  # plot(crowns_st, col = lidR::pastel.colors(200), main = "Individual Tree Crowns")
 
 # transform crowns stars object to vector data
   crowns_sf <- crowns_st %>% 
@@ -599,7 +580,7 @@ Segment the canopy height model raster grid as individual trees. Create a vector
   
 ```
 
-### Plot Crown Groups
+## Lidar-Derived Crown Groups Summary
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # plot
@@ -627,7 +608,158 @@ Segment the canopy height model raster grid as individual trees. Create a vector
 ```
 
 
-```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE}
+### Crown Group Summary Statistics
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# table
+kable(crowns_group %>% sf::st_set_geometry(NULL) %>% 
+        dplyr::group_by(
+          crown_group_class
+        ) %>% 
+        dplyr::summarise(
+          # plots = dplyr::n_distinct(plot)
+          crown_groups = dplyr::n()
+          , mean_m2 = mean(crown_group_area_ha, na.rm = TRUE) * 10000
+          , trees_per_ha = mean(trees_per_ha, na.rm = TRUE)
+          , mean_count_trees = mean(count_trees, na.rm = TRUE)
+          , mean_count_trees_canopy = sum(count_trees_canopy, na.rm = TRUE)
+          , mean_count_trees_subcanopy = sum(count_trees_subcanopy, na.rm = TRUE)
+          , mean_hgt_m = mean(min_hgt_m, na.rm = TRUE)
+          # , min_hgt_m = min(min_hgt_m, na.rm = TRUE)
+          # , max_hgt_m = max(max_hgt_m, na.rm = TRUE)
+        ) %>% 
+    dplyr::arrange(desc(mean_count_trees))
+  , format = "html" 
+  , caption = "Tree Crown Groups Summary Statistics"
+  , digits = 1
+  , col.names = c(
+    "Classification"
+    , "# crown groups"
+    , "area (m2)"
+    , "TPH"
+    , "# trees"
+    , "# canopy trees"
+    , "# subcanopy trees"
+    , "height (m)"
+    # , "min hgt (m)"
+    # , "max hgt (m)"
+  )
+  , align=rep('c', 5)
+) %>% 
+# kable_classic() %>%
+add_header_above(c(" " = 2, "Mean" = 6)) %>%
+kable_material(c("striped", "hover")) %>%
+# column_spec(., 2, width = "20em") %>% 
+kable_styling(font_size = 11) 
+
+```
+
+## Map Crowns and Rx Fire Area
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# make map
+# different background map types: https://leaflet-extras.github.io/leaflet-providers/preview/
+# names(leaflet.providers::providers_loaded()$providers)
+mapviewOptions(homebutton = FALSE, basemaps = c("Esri.WorldImagery"))
+# crop data
+bhef_crowns_group <- sf::st_intersection(
+  crowns_group %>% 
+    dplyr::filter(crown_group_area_ha <= 2)
+  , bhef_boundary %>% dplyr::select(name)
+)
+# map
+mapview(bhef_boundary
+        , color = "black"
+        , lwd = 3
+        , alpha.regions = 0
+        , label = FALSE
+        , legend = FALSE
+        , popup = FALSE
+) +
+mapview(rx_fire
+        , color = "red"
+        , lwd = 2
+        , alpha.regions = 0
+        , label = FALSE
+        , legend = FALSE
+        , popup = FALSE
+) +
+mapview(bhef_crowns_group
+        , zcol = "crown_group_class"
+        , col.regions = viridis::viridis(n=length(unique(bhef_crowns_group$crown_group_class)))
+        , alpha.regions = 0.8
+        , label = c("lab")
+        , legend = FALSE
+          , popup = popupTable(
+              bhef_crowns_group
+              , zcol = c(
+                "crown_group_class"
+                , "count_trees"
+                , "min_hgt_m"
+                , "max_hgt_m"
+                , "mean_hgt_m"
+                , "count_trees_canopy"
+                , "count_trees_subcanopy"
+              )
+              , row.numbers = FALSE
+              , feature.id = FALSE
+            )
+) 
+```
+
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(list = c("kernel", "algo", "lazs", "ws_fn"))
+gc()
+```
+
+## Write Out Data
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# save cleaned data for reading to R later
+sf::st_write(crowns_group, "../data/crowns_group.gpkg", append = FALSE)
+```
+
+
+
+
+```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE, results='hide'}
+## Load NAIP Imagery
+# tif = system.file("tif/L7_ETMs.tif", package = "stars")
+# x = read_stars(tif)
+# x[,,,c(6,5,4,3)]
+# r = st_rgb(x[,,,c(6,5,4,3)], 3, use_alpha=TRUE) # now R=6,G=5,B=4,alpha=3
+# if (require(ggplot2)) {
+#  ggplot() + geom_stars(data = r) + scale_fill_identity()
+# }
+
+
+
+# load with stars
+tifs <- list.files("../data/naip/", pattern = "\\.tif$", full.names = TRUE)
+
+# x <- stars::read_stars(imgs[1])
+naip_st <- stars::read_stars(tifs[1])
+plot(naip_st %>% dplyr::slice(band, 1:3), axes = TRUE)
+
+
+
+naip_rgb <- stars::st_rgb(
+  naip_st[,,,c(1, 2, 3)]
+  , dimension = 3
+  , use_alpha = FALSE
+  , maxColorValue = 255L
+)
+ 
+# ggplot() +
+#   stars::geom_stars(data = naip_rgb) +
+#   scale_fill_identity()
+
+```
+
+
+
+```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE, results='hide'}
 # apply itd to smoothed kernel chm?
   methods(class = "stars")
 
@@ -652,83 +784,3 @@ Segment the canopy height model raster grid as individual trees. Create a vector
   
   
 ```
-
-## Map Harvests, Research Plots, Stem Map
-
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# make map
-# different background map types: https://leaflet-extras.github.io/leaflet-providers/preview/
-# names(leaflet.providers::providers_loaded()$providers)
-mapviewOptions(homebutton = FALSE, basemaps = c("Esri"))
-# map
-mapview(bhef_boundary
-        , color = "black"
-        , lwd = 3
-        , alpha.regions = 0
-        , label = FALSE
-        , legend = FALSE
-        , popup = FALSE
-) +
-mapview(bhef_harvests_l15
-        , zcol = "treatment_type_grp"
-        , col.regions = viridis::viridis(n=length(unique(bhef_harvests_l15$treatment_type_grp)))
-        , alpha.regions = 0.6
-        , label = c("lab")
-        , legend = FALSE
-          , popup = popupTable(
-              bhef_harvests_l15
-              , zcol = c(
-                "year_id"
-                , "treatment_type_grp"
-                , "activity_name"
-              )
-              , row.numbers = FALSE
-              , feature.id = FALSE
-            )
-) +
-mapview(research_plots
-        , zcol = "trt"
-        , col.regions = viridis::mako(n=length(unique(research_plots$trt)), direction = -1)
-        , lwd = 2
-        , col = "gray90"
-        , alpha.regions = 0.8
-        , label = c("trt")
-        , legend = FALSE
-          , popup = popupTable(
-              research_plots
-              , zcol = c(
-                "plot"
-                , "trt"
-                , "harvest_activity_name_1"
-                , "harvest_year_id_1"
-              )
-              , row.numbers = FALSE
-              , feature.id = FALSE
-            )
-)  +
-mapview(stem_map
-  , zcol = "unit"
-  , col.regions = viridis::turbo(n=length(unique(stem_map$unit)), alpha = 0.8)
-    # RColorBrewer::brewer.pal(n = length(unique(stem_map$unit)), name = "RdYlBu")
-  , cex = 3.5
-  , label = c("unit")
-  , legend = FALSE
-    , popup = popupTable(
-        stem_map
-        , zcol = c(
-          "unit"
-          , "plot"
-          , "species"
-          , "tag"
-          , "heightft"
-          , "dbhin"
-          , "harvest_activity_name_1"
-          , "harvest_year_id_1"
-        )
-        , row.numbers = FALSE
-        , feature.id = FALSE
-      )
-)
-
-```
-

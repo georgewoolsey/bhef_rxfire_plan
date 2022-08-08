@@ -126,6 +126,27 @@ stem_map <- sf::st_read("../data/BHEF_stem_map.shp") %>%
 stem_map %>% glimpse()
 ```
 
+## Load Rx Fire shapefile
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# load stem map shapefile
+rx_fire <- sf::st_read("../data/ExpoRX.shp") %>% 
+  dplyr::filter(sf::st_is_valid(.)) %>% 
+  rename_with(~ tolower(
+    gsub(" ", "_", 
+       str_trim(gsub("\\s+", " ", .x))
+    )
+  )) %>% 
+  sf::st_transform(crs = sf::st_crs(research_plots))
+
+#rename sf geom column
+  names(rx_fire)[names(rx_fire)==tolower(attr(rx_fire, "sf_column"))] = "geometry"
+  sf::st_geometry(rx_fire) = "geometry"
+
+# data structure of stem map data
+rx_fire %>% glimpse()
+```
+
 ## Load National Forests shapefile
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
@@ -485,6 +506,14 @@ mapview(bhef_harvests_l15
               , feature.id = FALSE
             )
 ) +
+mapview(rx_fire
+        , color = "red"
+        , lwd = 2
+        , alpha.regions = 0
+        , label = FALSE
+        , legend = FALSE
+        , popup = FALSE
+) +
 mapview(research_plots
         , zcol = "trt"
         , col.regions = viridis::mako(n=length(unique(research_plots$trt)), direction = -1)
@@ -542,4 +571,5 @@ sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
 sf::st_write(bhef_harvests, "../data/bhef_harvests.gpkg", append = FALSE)
 sf::st_write(research_plots, "../data/research_plots.gpkg", append = FALSE)
 sf::st_write(stem_map, "../data/stem_map.gpkg", append = FALSE)
+sf::st_write(rx_fire, "../data/rx_fire.gpkg", append = FALSE)
 ```
