@@ -334,27 +334,27 @@ kable_styling(font_size = 11)
       stars::st_warp(crs = sf::st_crs(bhef_boundary))
     
   # plot
-  ggplot() +
-    stars::geom_stars(data = chm_smooth) +
-    geom_sf(data = sf::st_crop(bhef_boundary, sf::st_bbox(chm_smooth)), alpha = 0, lwd = 0) +
-    scale_fill_viridis_c(option = "mako", alpha = 0.9) +
-    labs(
-      title = "BHEF Canopy Height Model"
-      , subtitle = sf::st_crs(chm_smooth)$input
-    ) +
-    scale_x_continuous(expand = c(0, 0)) +
-    scale_y_continuous(expand = c(0, 0)) +
-    theme_bw() +
-    theme(
-      # legend.position = "bottom"
-      # , legend.direction = "horizontal"
-      axis.text = element_text(size = 8)
-      # , panel.grid = element_blank()
-      , panel.border = element_blank()
-    ) +
-    guides(
-      fill = guide_legend(title="Hgt. (m)")
-    )  
+  # ggplot() +
+  #   stars::geom_stars(data = chm_smooth) +
+  #   geom_sf(data = sf::st_crop(bhef_boundary, sf::st_bbox(chm_smooth)), alpha = 0, lwd = 0) +
+  #   scale_fill_viridis_c(option = "mako", alpha = 0.9) +
+  #   labs(
+  #     title = "BHEF Canopy Height Model"
+  #     , subtitle = sf::st_crs(chm_smooth)$input
+  #   ) +
+  #   scale_x_continuous(expand = c(0, 0)) +
+  #   scale_y_continuous(expand = c(0, 0)) +
+  #   theme_bw() +
+  #   theme(
+  #     # legend.position = "bottom"
+  #     # , legend.direction = "horizontal"
+  #     axis.text = element_text(size = 8)
+  #     # , panel.grid = element_blank()
+  #     , panel.border = element_blank()
+  #   ) +
+  #   guides(
+  #     fill = guide_legend(title="Hgt. (m)")
+  #   )  
 
   
 ```
@@ -421,25 +421,25 @@ ggplot() +
     )
     
   # plot
-  ggplot() +
-    stars::geom_stars(data = chm_smooth) +
-    geom_sf(data = tree_tops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
-    scale_fill_viridis_c(option = "mako", alpha = 0.9) +
-    labs(
-      title = "BHEF Canopy Height Model with Tree Tops Identified (yellow)"
-      , subtitle = sf::st_crs(chm_smooth)$input
-    ) +
-    theme_bw() +
-    scale_x_continuous(expand = c(0, 0)) +
-    scale_y_continuous(expand = c(0, 0)) +
-    theme(
-      axis.text = element_text(size = 8)
-      # , panel.grid = element_blank()
-      , panel.border = element_blank()
-    ) +
-    guides(
-      fill = guide_legend(title="Hgt. (m)")
-    )
+  # ggplot() +
+  #   stars::geom_stars(data = chm_smooth) +
+  #   geom_sf(data = tree_tops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
+  #   scale_fill_viridis_c(option = "mako", alpha = 0.9) +
+  #   labs(
+  #     title = "BHEF Canopy Height Model with Tree Tops Identified (yellow)"
+  #     , subtitle = sf::st_crs(chm_smooth)$input
+  #   ) +
+  #   theme_bw() +
+  #   scale_x_continuous(expand = c(0, 0)) +
+  #   scale_y_continuous(expand = c(0, 0)) +
+  #   theme(
+  #     axis.text = element_text(size = 8)
+  #     # , panel.grid = element_blank()
+  #     , panel.border = element_blank()
+  #   ) +
+  #   guides(
+  #     fill = guide_legend(title="Hgt. (m)")
+  #   )
   
   # hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
   # add_treetops3d(hey_plot, tree_tops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
@@ -518,7 +518,7 @@ Segment the canopy height model raster grid as individual trees. Create a vector
       sf::st_union(crowns_sf)
     , "POLYGON")
   # quick plot
-    plot(crowns_group, col = lidR::pastel.colors(200), main = "Tree Crown Groups")
+    # plot(crowns_group, col = lidR::pastel.colors(200), main = "Tree Crown Groups")
   
   #create id column
     crowns_group <- crowns_group %>% 
@@ -588,12 +588,13 @@ gc()
 ## Lidar-Derived Crown Groups Summary
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+sf::st_intersection(crowns_group, research_plots[1,]) %>% 
 # plot
   ggplot() +
-    geom_sf(data = crowns_group, aes(fill = crown_group_class), lwd = 0) +
+    geom_sf(aes(fill = crown_group_class), lwd = 0) +
     scale_fill_viridis_d(option = "turbo", alpha = 0.9) + 
     labs(
-      title = "BHEF Crown Groups"
+      title = "BHEF Crown Groups (1 ha sample area)"
       , subtitle = sf::st_crs(crowns_group)$input
     ) +
     scale_x_continuous(expand = c(0, 0)) +
@@ -665,8 +666,8 @@ kable_styling(font_size = 11)
 mapviewOptions(homebutton = FALSE, basemaps = c("Esri.WorldImagery"))
 # crop data
 bhef_crowns_group <- sf::st_intersection(
-  crowns_group %>% 
-    dplyr::filter(crown_group_area_ha <= 2)
+  crowns_group 
+    # dplyr::filter(crown_group_area_ha <= 2)
   , bhef_boundary %>% dplyr::select(name)
 )
 # map
