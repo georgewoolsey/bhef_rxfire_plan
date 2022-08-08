@@ -320,9 +320,11 @@ kable_styling(font_size = 11)
 ######################################################
 # Canopy Height model
 ######################################################
+  # Points-to-raster algorithm with a resolution of 1 meter
     chm <- lidR::rasterize_canopy(
       nlas
       , res = 1
+      #  for each pixel of the output raster the function attributes the height of the highest point found
       , p2r(subcircle = 0.0
             # , na.fill = tin()
             , na.fill = knnidw(
@@ -348,7 +350,7 @@ kable_styling(font_size = 11)
     
   # plot
   ggplot() +
-    stars::geom_stars(data = chm_smooth %>% dplyr::filter(values >=2)) +
+    stars::geom_stars(data = chm_smooth) +
     geom_sf(data = sf::st_crop(bhef_boundary, sf::st_bbox(chm_smooth)), alpha = 0, lwd = 0) +
     scale_fill_viridis_c(option = "mako", alpha = 0.9) +
     labs(
@@ -365,7 +367,12 @@ kable_styling(font_size = 11)
       fill = guide_legend(title="Hgt. (m)")
     )  
 
-xxx <- chm_smooth %>% 
+  
+```
+
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+xxx <- chm_smooth %>%
   # create classes based on Steel et al. 2021
   dplyr::mutate(
     veg_class = dplyr::case_when(
@@ -374,26 +381,25 @@ xxx <- chm_smooth %>%
       , values >= 1 ~ 1 # understory
       , TRUE ~ 0 # ground
     )
-  ) %>% 
-  merge() %>% 
+  ) %>%
+  merge() %>%
   setNames("z") %>%
-  st_set_dimensions(names = c("x", "y", "band")) %>% 
+  st_set_dimensions(names = c("x", "y", "band")) %>%
   # select only the class band
-  dplyr::slice(band, 2) %>% 
+  dplyr::slice(band, 2) %>%
   # convert to vector data and merge polygons with identical values
-  sf::st_as_sf(as_points = FALSE, merge = TRUE) %>% 
+  sf::st_as_sf(as_points = FALSE, merge = TRUE) %>%
   # transform to same crs as rest of data
-  sf::st_transform(crs = st_crs(bhef_boundary)) 
+  sf::st_transform(crs = st_crs(bhef_boundary))
 
 names(xxx)[1] = "veg_class"
 
-ggplot() + 
-  geom_sf(data = xxx, aes(fill = as.factor(veg_class)), lwd = 0 ) + 
-  scale_fill_viridis_d() + 
+ggplot() +
+  geom_sf(data = xxx, aes(fill = as.factor(veg_class)), lwd = 0 ) +
+  scale_fill_viridis_d() +
   theme_bw()
-  
 
-  
+
 ```
 
 ### Individual Tree Detection (ITD)
@@ -433,24 +439,101 @@ ggplot() +
       fill = guide_legend(title="Hgt. (m)")
     )
   
-  # height range of tree tops
-  # !!!!!!!!!!!!!!!!!!make hist
-  
   # hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
   # add_treetops3d(hey_plot, ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
   # ?lidR::pixel_metrics()
 ```
 
+#### Distribution of Tree Top Heights
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+######################################################
+# height range of tree tops
+######################################################
+ttops %>% sf::st_set_geometry(NULL) %>% 
+  dplyr::mutate(height_ceil = ceiling(Z)) %>% 
+  dplyr::group_by(height_ceil) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(
+    pct_tot = n / sum(n)
+  ) %>% 
+  ggplot(.) +
+    # geom_col(aes(x = height_ceil, y = n, fill = n)) +
+    geom_bar(aes(x = height_ceil, y = pct_tot, fill = n), color = "gray25", stat = "identity") +
+    scale_y_continuous(labels = scales::label_percent(accuracy = 1L)) +
+    scale_x_continuous(breaks = seq(min(ttops$Z), max(ttops$Z)+1, 1))+
+    scale_fill_viridis_c(alpha = 0.9, option = "mako", direction = -1) +
+    labs(
+        title = "Distribution of Tree Top Heights (m)"
+      ) +
+    xlab("Tree Height (m) Bin") +
+    ylab("% Tree tops") +
+    theme_bw() +
+    theme(
+      legend.position="none"
+    ) 
+```
+
 ### Individual Tree Segmentation (ITS)
+
+Segment the canopy height model raster grid as individual trees. Create a vector representation of tree groupings and summary statistics of height for each group.
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 ######################################################
 # Individual Tree Segmentation (ITS)
 ######################################################
-algo <- lidR::dalponte2016(chm_smooth, ttops)
-crowns <- algo()
+# implements an algorithm for tree segmentation based on 
+  # Dalponte and Coomes (2016) algorithm (see reference). 
+  # This is a seeds + growing region algorithm.
+  algo <- lidR::dalponte2016(chm = chm_smooth, treetops = ttops, th_tree = 2)
+  crowns_st <- algo()
+# quick plot
+  plot(crowns_st, col = lidR::pastel.colors(200), main = "Individual Tree Crowns")
 
-plot(crowns, col = pastel.colors(200))
+# transform crowns stars object to vector data
+  crowns_sf <- crowns_st %>% 
+    # convert to vector data and merge polygons with identical pixel values
+    sf::st_as_sf(as_points = FALSE, merge = TRUE) %>% 
+    # transform to same crs as rest of data
+    sf::st_transform(crs = st_crs(bhef_boundary)) %>% 
+    dplyr::mutate(
+      tree_id = values
+      , crown_area = sf::st_area(.)
+    ) %>% 
+    dplyr::relocate(tree_id, crown_area) %>% 
+    dplyr::select(tree_id, crown_area) %>% 
+    sf::st_set_precision(1e7) %>% 
+    sf::st_make_valid(.) %>% 
+    dplyr::filter(sf::st_is_valid(.))
+  
+# combine crown groups
+  crown_groups <- sf::st_cast(
+      sf::st_union(crowns_sf)
+    , "POLYGON")
+  # quick plot
+  plot(crown_groups, col = lidR::pastel.colors(200), main = "Tree Crown Groups")
+
+# join back to individual tree crowns
+  crown_i <- unlist(st_intersects(x, parts))
+
+# if you do want to construct the geometry of the clusters, use st_union:
+# parts = st_cast(st_union(bdf),"POLYGON")
+# st_intersects(bdf, parts)
+###############
+  # parts <- st_cast(st_union(x),"POLYGON")
+  # plot(parts)
+  # 
+  # clust <- unlist(st_intersects(x, parts))
+  # 
+  # diss <- cbind(x, clust) %>%
+  #   group_by(clust) %>%
+  #   summarize(box = paste(box, collapse = ", "))
+  # 
+  # plot(diss[1])
+
+
+
 # 
 # # plot
 #   ggplot() +
