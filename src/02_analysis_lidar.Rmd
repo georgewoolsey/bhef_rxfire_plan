@@ -371,7 +371,7 @@ kable_styling(font_size = 11)
 ```
 
 
-```{r, warning=FALSE, message=FALSE, eval=FALSE}
+```{r, warning=FALSE, message=FALSE, eval=FALSE, echo=FALSE, include=FALSE}
 xxx <- chm_smooth %>%
   # create classes based on Steel et al. 2021
   dplyr::mutate(
@@ -390,7 +390,7 @@ xxx <- chm_smooth %>%
   # convert to vector data and merge polygons with identical values
   sf::st_as_sf(as_points = FALSE, merge = TRUE) %>%
   # transform to same crs as rest of data
-  sf::st_transform(crs = st_crs(bhef_boundary))
+  sf::st_transform(crs = sf::st_crs(bhef_boundary))
 
 names(xxx)[1] = "veg_class"
 
@@ -475,6 +475,10 @@ ttops %>% sf::st_set_geometry(NULL) %>%
     ) 
 ```
 
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+gc()
+```
+
 ### Individual Tree Segmentation (ITS)
 
 Segment the canopy height model raster grid as individual trees. Create a vector representation of tree groupings and summary statistics of height for each group.
@@ -508,15 +512,25 @@ Segment the canopy height model raster grid as individual trees. Create a vector
     dplyr::filter(sf::st_is_valid(.))
   
 # combine crown groups
-  crown_groups <- sf::st_cast(
+  crowns_group <- sf::st_cast(
       sf::st_union(crowns_sf)
     , "POLYGON")
   # quick plot
-  plot(crown_groups, col = lidR::pastel.colors(200), main = "Tree Crown Groups")
+    plot(crowns_group, col = lidR::pastel.colors(200), main = "Tree Crown Groups")
+  
+  #create id column
+    crowns_group <- crowns_group %>% 
+      merge(., data.frame(geo_type = sf::st_geometry_type(crowns_group)), by.x=0, by.y=0, all.x=TRUE) %>% 
+      dplyr::mutate(crown_group_id = as.numeric(as.factor(Row.names)))  %>% 
+      dplyr::select(-c(geo_type, Row.names)) %>% 
+      dplyr::relocate(crown_group_id) %>% 
+      sf::st_as_sf(., sf_column_name = "geometry", crs = sf::st_crs(bhef_boundary))
 
 # join back to individual tree crowns
-  crown_i <- unlist(st_intersects(x, parts))
+  crowns_group_intersect <- unlist(sf::st_intersects(crowns_sf, crowns_group))
+  
 
+  
 # if you do want to construct the geometry of the clusters, use st_union:
 # parts = st_cast(st_union(bdf),"POLYGON")
 # st_intersects(bdf, parts)
@@ -555,7 +569,7 @@ Segment the canopy height model raster grid as individual trees. Create a vector
 ```
 
 
-```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE}
+```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE}
 # apply itd to smoothed kernel chm?
   methods(class = "stars")
 
