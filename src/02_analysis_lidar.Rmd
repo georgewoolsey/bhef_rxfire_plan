@@ -732,11 +732,3 @@ mapview(stem_map
 
 ```
 
-## Write Out Data
-
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# save cleaned data for reading to R later
-sf::st_write(chm_smooth, "../data/chm_smooth.gpkg", append = FALSE)
-sf::st_write(crowns_group, "../data/crowns_group.gpkg", append = FALSE)
-sf::st_write(tree_tops, "../data/tree_tops.gpkg", append = FALSE)
-```
