@@ -133,9 +133,13 @@ ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
       title = "BHEF Elevation Map"
       , subtitle = sf::st_crs(bhef_elev)$input
     ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   theme_bw() +
   theme(
     axis.text = element_text(size = 8)
+    # , panel.grid = element_blank()
+    , panel.border = element_blank()
   ) +
   guides(
     fill = guide_legend(title="Elev. (m)")
@@ -152,7 +156,7 @@ gc()
 
 Use the `lidR` package for manipulating and visualizing point cloud data. See the very [helpful book](https://r-lidar.github.io/lidRbook/index.html) by Roussel, J.R., Goodbody, T.R.H., and Tompalski P. (2021) for more information.
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # list laz files
   lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
 # change projection of DEM 
@@ -184,7 +188,7 @@ Use the `lidR` package for manipulating and visualizing point cloud data. See th
   # sf::st_crs(las)
   # temp_plot <- plot(las, color = "Z", breaks = "quantile", bg = "white")
   # temp_plot
-  # # add_treetops3d(temp_plot, ttops)
+  # # add_treetops3d(temp_plot, tree_tops)
 ######################################################
 # remove outliers
 ######################################################
@@ -234,7 +238,7 @@ Use the `lidR` package for manipulating and visualizing point cloud data. See th
 
 ### Height normalization using DEM 
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 ######################################################
 # Height normalization using DEM 
     # could create own DEM with lidar data ... 
@@ -316,7 +320,7 @@ kable_styling(font_size = 11)
 
 ### Canopy Height model
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 ######################################################
 # Canopy Height model
 ######################################################
@@ -357,11 +361,15 @@ kable_styling(font_size = 11)
       title = "BHEF Canopy Height Model"
       , subtitle = sf::st_crs(chm_smooth)$input
     ) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
     theme_bw() +
     theme(
       # legend.position = "bottom"
       # , legend.direction = "horizontal"
       axis.text = element_text(size = 8)
+      # , panel.grid = element_blank()
+      , panel.border = element_blank()
     ) +
     guides(
       fill = guide_legend(title="Hgt. (m)")
@@ -404,7 +412,7 @@ ggplot() +
 
 ### Individual Tree Detection (ITD)
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 ######################################################
 # Individual Tree Detection (ITD)
 ######################################################
@@ -420,37 +428,50 @@ ggplot() +
       return(y)
   }
   # ITD on CHM
-  ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn))
+  tree_tops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)) %>% 
+    # create classes based on Steel et al. 2021
+    dplyr::mutate(
+      tree_class = dplyr::case_when(
+        Z > 8 ~ 3 # canopy
+        , Z >= 2 ~ 2 # subcanopy
+        , Z >= 1 ~ 1 # understory
+        , TRUE ~ 0 # ground
+      )
+    )
     
   # plot
   ggplot() +
     stars::geom_stars(data = chm_smooth) +
-    geom_sf(data = ttops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
+    geom_sf(data = tree_tops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
     scale_fill_viridis_c(option = "mako", alpha = 0.9) +
     labs(
       title = "BHEF Canopy Height Model with Tree Tops Identified (yellow)"
       , subtitle = sf::st_crs(chm_smooth)$input
     ) +
     theme_bw() +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
     theme(
       axis.text = element_text(size = 8)
+      # , panel.grid = element_blank()
+      , panel.border = element_blank()
     ) +
     guides(
       fill = guide_legend(title="Hgt. (m)")
     )
   
   # hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
-  # add_treetops3d(hey_plot, ttops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
+  # add_treetops3d(hey_plot, tree_tops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
   # ?lidR::pixel_metrics()
 ```
 
 #### Distribution of Tree Top Heights
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 ######################################################
 # height range of tree tops
 ######################################################
-ttops %>% sf::st_set_geometry(NULL) %>% 
+tree_tops %>% sf::st_set_geometry(NULL) %>% 
   dplyr::mutate(height_ceil = ceiling(Z)) %>% 
   dplyr::group_by(height_ceil) %>% 
   dplyr::summarise(n = n()) %>% 
@@ -462,7 +483,7 @@ ttops %>% sf::st_set_geometry(NULL) %>%
     # geom_col(aes(x = height_ceil, y = n, fill = n)) +
     geom_bar(aes(x = height_ceil, y = pct_tot, fill = n), color = "gray25", stat = "identity") +
     scale_y_continuous(labels = scales::label_percent(accuracy = 1L)) +
-    scale_x_continuous(breaks = seq(min(ttops$Z), max(ttops$Z)+1, 1))+
+    scale_x_continuous(breaks = seq(min(tree_tops$Z), max(tree_tops$Z)+1, 1))+
     scale_fill_viridis_c(alpha = 0.9, option = "mako", direction = -1) +
     labs(
         title = "Distribution of Tree Top Heights (m)"
@@ -483,14 +504,14 @@ gc()
 
 Segment the canopy height model raster grid as individual trees. Create a vector representation of tree groupings and summary statistics of height for each group.
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 ######################################################
 # Individual Tree Segmentation (ITS)
 ######################################################
 # implements an algorithm for tree segmentation based on 
   # Dalponte and Coomes (2016) algorithm (see reference). 
   # This is a seeds + growing region algorithm.
-  algo <- lidR::dalponte2016(chm = chm_smooth, treetops = ttops, th_tree = 2)
+  algo <- lidR::dalponte2016(chm = chm_smooth, treetops = tree_tops, th_tree = 2)
   crowns_st <- algo()
 # quick plot
   plot(crowns_st, col = lidR::pastel.colors(200), main = "Individual Tree Crowns")
@@ -526,43 +547,80 @@ Segment the canopy height model raster grid as individual trees. Create a vector
       dplyr::relocate(crown_group_id) %>% 
       sf::st_as_sf(., sf_column_name = "geometry", crs = sf::st_crs(bhef_boundary))
 
-# join back to individual tree crowns
-  crowns_group_intersect <- unlist(sf::st_intersects(crowns_sf, crowns_group))
+# join back to individual tree crowns and summarize
+  crowns_group_sum <- sf::st_intersection(tree_tops, crowns_group) %>% 
+    # if need to keep group at tree level... break here
+    sf::st_set_geometry(NULL) %>%
+    dplyr::group_by(crown_group_id) %>%
+    dplyr::summarise(
+      count_trees = dplyr::n_distinct(treeID)
+      , min_hgt_m = min(Z, na.rm = TRUE) 
+      , max_hgt_m = max(Z, na.rm = TRUE) 
+      , mean_hgt_m = mean(Z, na.rm = TRUE) 
+      , median_hgt_m = median(Z, na.rm = TRUE) 
+      , median_hgt_m = median(Z, na.rm = TRUE)
+      , quant10_hgt_m = as.numeric( quantile(Z, probs = .10, na.rm = TRUE) )
+      , quant25_hgt_m = as.numeric( quantile(Z, probs = .25, na.rm = TRUE) )
+      , quant50_hgt_m = as.numeric( quantile(Z, probs = .50, na.rm = TRUE) )
+      , quant75_hgt_m = as.numeric( quantile(Z, probs = .75, na.rm = TRUE) )
+      , quant90_hgt_m = as.numeric( quantile(Z, probs = .90, na.rm = TRUE) )
+      , count_trees_canopy = sum(ifelse(tree_class == 3, 1, 0), na.rm = TRUE)
+      , count_trees_subcanopy = sum(ifelse(tree_class == 2, 1, 0), na.rm = TRUE)
+      , count_trees_understory = sum(ifelse(tree_class == 1, 1, 0), na.rm = TRUE)
+      , count_trees_ground = sum(ifelse(tree_class == 0, 1, 0), na.rm = TRUE)
+    ) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::arrange(crown_group_id) %>%
+    dplyr::mutate(
+      crown_group_class = dplyr::case_when(
+        count_trees == 1 ~ "Individual Tree"
+        , count_trees <= 10 
+          & count_trees_canopy/count_trees >= .75 ~  "Small Group - Canopy"
+        , count_trees <= 10 
+          & count_trees_subcanopy/count_trees >= .75 ~  "Small Group - Subcanopy"
+        , count_trees <= 10 ~  "Small Group - Mixed"
+        , count_trees <= 40 
+          & count_trees_canopy/count_trees >= .75 ~  "Medium Group - Canopy"
+        , count_trees <= 40 
+          & count_trees_subcanopy/count_trees >= .75 ~  "Medium Group - Subcanopy"
+        , count_trees <= 40 ~  "Medium Group - Mixed"
+        , count_trees_canopy/count_trees >= .75 ~ "Continuous - Canopy"
+        , count_trees_subcanopy/count_trees >= .75 ~ "Continuous - Subcanopy"
+        , TRUE ~ "Continuous - Mixed"
+      )
+    )
+#attach summary statistics to spatial crown groups
+  crowns_group <- crowns_group %>% 
+    dplyr::left_join(crowns_group_sum, by = c("crown_group_id" = "crown_group_id")) %>% 
+    dplyr::mutate(
+      crown_group_area_ha = as.numeric(sf::st_area(.)) / 10000
+      , trees_per_ha = count_trees / crown_group_area_ha
+    )
   
+```
 
-  
-# if you do want to construct the geometry of the clusters, use st_union:
-# parts = st_cast(st_union(bdf),"POLYGON")
-# st_intersects(bdf, parts)
-###############
-  # parts <- st_cast(st_union(x),"POLYGON")
-  # plot(parts)
-  # 
-  # clust <- unlist(st_intersects(x, parts))
-  # 
-  # diss <- cbind(x, clust) %>%
-  #   group_by(clust) %>%
-  #   summarize(box = paste(box, collapse = ", "))
-  # 
-  # plot(diss[1])
+### Plot Crown Groups
 
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# plot
+  ggplot() +
+    geom_sf(data = crowns_group, aes(fill = crown_group_class), lwd = 0) +
+    scale_fill_viridis_d(option = "turbo", alpha = 0.9) + 
+    labs(
+      title = "BHEF Crown Groups"
+      , subtitle = sf::st_crs(crowns_group)$input
+    ) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom"
+      , legend.title = element_blank()
+      , axis.text = element_text(size = 8)
+      # , panel.grid = element_blank()
+      , panel.border = element_blank()
+    )
 
-
-# 
-# # plot
-#   ggplot() +
-#     stars::geom_stars(data = crowns) +
-#     geom_sf(data = ttops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
-#     # scale_fill_viridis_c(option = "turbo", alpha = 0.7) +
-#     labs(
-#       title = "BHEF Individual Tree Crowns (tree tops in yellow)"
-#       , subtitle = sf::st_crs(crowns)$input
-#     ) +
-#     theme_bw() +
-#     theme(
-#       legend.position = "none"
-#       , axis.text = element_text(size = 8)
-#     )
   
 
 
@@ -674,17 +732,11 @@ mapview(stem_map
 
 ```
 
-*Note, only harvests in last 15 years shown*
-
 ## Write Out Data
-
-Make a map of the stem mapped trees.
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # save cleaned data for reading to R later
-sf::st_write(forests_bhnf, "../data/forests_bhnf.gpkg", append = FALSE)
-sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
-sf::st_write(bhef_harvests, "../data/bhef_harvests.gpkg", append = FALSE)
-sf::st_write(research_plots, "../data/research_plots.gpkg", append = FALSE)
-sf::st_write(stem_map, "../data/stem_map.gpkg", append = FALSE)
+sf::st_write(chm_smooth, "../data/chm_smooth.gpkg", append = FALSE)
+sf::st_write(crowns_group, "../data/crowns_group.gpkg", append = FALSE)
+sf::st_write(tree_tops, "../data/tree_tops.gpkg", append = FALSE)
 ```

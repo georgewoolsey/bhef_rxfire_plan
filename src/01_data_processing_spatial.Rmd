@@ -257,7 +257,7 @@ bhef_harvests_l15 <- bhef_harvests %>% dplyr::filter(year_id >= year(Sys.time())
 
 ### Harvests by treatment type
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # data by treatment type
 bhef_harvests_l15 %>% sf::st_set_geometry(NULL) %>% 
   dplyr::group_by(activity_name) %>% 
@@ -291,7 +291,7 @@ gc()
 
 ## Join Research Plot to Harvest
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # attach harvest data to research plots
 research_plots_harvests <- sf::st_intersection(
   research_plots
@@ -344,7 +344,7 @@ remove(research_plots_harvests)
 
 ## Join Stem Map to Research Plot & Harvest
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # attach harvest data to stem map
 stem_map_harvests <- sf::st_intersection(
   stem_map
@@ -405,7 +405,7 @@ gc()
 
 ### Stem Map Descriptive statistics.
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # descriptive stats
 kable(stem_map %>% sf::st_set_geometry(NULL) %>% 
         dplyr::group_by(
@@ -454,7 +454,7 @@ kable_styling(font_size = 11)
 
 ## Map Harvests, Research Plots, Stem Map
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # make map
 # different background map types: https://leaflet-extras.github.io/leaflet-providers/preview/
 # names(leaflet.providers::providers_loaded()$providers)
@@ -535,9 +535,7 @@ mapview(stem_map
 
 ## Write Out Data
 
-Make a map of the stem mapped trees.
-
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # save cleaned data for reading to R later
 sf::st_write(forests_bhnf, "../data/forests_bhnf.gpkg", append = FALSE)
 sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
