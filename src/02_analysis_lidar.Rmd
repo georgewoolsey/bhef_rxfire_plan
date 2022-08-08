@@ -580,6 +580,11 @@ Segment the canopy height model raster grid as individual trees. Create a vector
   
 ```
 
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(list = c("kernel", "algo", "lazs", "ws_fn"))
+gc()
+```
+
 ## Lidar-Derived Crown Groups Summary
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
@@ -601,10 +606,7 @@ Segment the canopy height model raster grid as individual trees. Create a vector
       # , panel.grid = element_blank()
       , panel.border = element_blank()
     )
-
   
-
-
 ```
 
 
@@ -707,11 +709,6 @@ mapview(bhef_crowns_group
 ) 
 ```
 
-
-```{r, warning=F, message=F, echo=FALSE, include=FALSE}
-remove(list = c("kernel", "algo", "lazs", "ws_fn"))
-gc()
-```
 
 ## Write Out Data
 
