@@ -107,7 +107,7 @@ length(unique(research_plots$plot)) == nrow(research_plots)
 
 [Ritter et al. 2022](https://esajournals.onlinelibrary.wiley.com/doi/pdfdirect/10.1002/eap.2682) installed three plots in the commercial thin treatment and each of the two free selection treatments. Only two plots were installed in the small group retention treatment as it was smaller in area and was bisected by a powerline corridor that precluded the placement of more than two nonoverlapping plots. Each plot was subdivided into 16 25x25 m quadrats within which all live trees >1.37 m tall had their x, y locations recorded. In addition to mapping their x, y location, all live trees were tagged and had their DBH, tree height (TH), compacted crown base height (CBH), crown width (CW), and species recorded.
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # load stem map shapefile
 stem_map <- sf::st_read("../data/BHEF_stem_map.shp") %>% 
   dplyr::filter(sf::st_is_valid(.)) %>% 
@@ -128,7 +128,7 @@ stem_map %>% glimpse()
 
 ## Load Rx Fire shapefile
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # load stem map shapefile
 rx_fire <- sf::st_read("../data/ExpoRX.shp") %>% 
   dplyr::filter(sf::st_is_valid(.)) %>% 
@@ -278,7 +278,7 @@ bhef_harvests_l15 <- bhef_harvests %>% dplyr::filter(year_id >= year(Sys.time())
 
 ### Harvests by treatment type
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # data by treatment type
 bhef_harvests_l15 %>% sf::st_set_geometry(NULL) %>% 
   dplyr::group_by(activity_name) %>% 
@@ -426,7 +426,7 @@ gc()
 
 ### Stem Map Descriptive statistics.
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # descriptive stats
 kable(stem_map %>% sf::st_set_geometry(NULL) %>% 
         dplyr::group_by(
@@ -475,7 +475,7 @@ kable_styling(font_size = 11)
 
 ## Map Harvests, Research Plots, Stem Map
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # make map
 # different background map types: https://leaflet-extras.github.io/leaflet-providers/preview/
 # names(leaflet.providers::providers_loaded()$providers)

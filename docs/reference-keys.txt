@@ -1,3 +1,5 @@
+tab:unnamed-chunk-17
+tab:unnamed-chunk-37
 introduction
 objective
 vector_data
@@ -14,7 +16,7 @@ join-stem-map-to-research-plot-harvest
 stem-map-descriptive-statistics.
 map-harvests-research-plots-stem-map
 write-out-data
-stem_map
+lidar_data
 download-lidar-data-from-natl-map
 load-vector-data
 load-elevation-data

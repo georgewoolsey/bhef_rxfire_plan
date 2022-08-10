@@ -1,4 +1,4 @@
-# Analyze Lidar Data {#stem_map}
+# Analyze Lidar Data {#lidar_data}
 
 ```{r, include=FALSE, warning=F, message=F}
 # data mgmt
@@ -20,8 +20,6 @@ library(lidR) # lidar data
 library(elevatr) # elevation data (DEMs)
 library(terra) # raster math
 # library(spatstat) #point pattern analysis
-
-
 ```
 
 ```{r, warning=F, message=F, results='hide'}
@@ -33,6 +31,17 @@ sf::sf_use_s2(FALSE)
 ## Download Lidar Data From Nat'l Map
 
 The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP) - Lidar, IfSAR" data available marked as "Lidar Point Cloud (LPC)". This download file list was placed in the `data` folder where the code below utilizes it to download data. The "thumbnail" option in the Nat'l Map was used to determine that the "Fugro" data will suffice to cover the BHEF area. Also, downloaded NAIP imagery while had ROI drawn in Nat'l Map.
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+#######################################################
+#######################################################
+# TURN ON/OFF DATA OVERWRITE
+# TURNING THIS ON WILL RE-RUN ALL LIDAR PROCESSING
+# WHICH TAKES A LONG TIME
+#######################################################
+#######################################################
+overwrite_it <- FALSE
+```
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 #######################################################
@@ -87,13 +96,20 @@ bhef_harvests <- sf::st_read("../data/bhef_harvests.gpkg")
 research_plots <- sf::st_read("../data/research_plots.gpkg")
 stem_map <- sf::st_read("../data/stem_map.gpkg")
 rx_fire <- sf::st_read("../data/rx_fire.gpkg")
+if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+  crowns_group <- sf::st_read("../data/crowns_group.gpkg")
+}
+if(file.exists("../data/tree_tops.gpkg") == TRUE & overwrite_it == FALSE){
+  tree_tops <- sf::st_read("../data/tree_tops.gpkg")
+}
+
 ```
 
 ## Load Elevation Data
 
 Using `elevatr::get_elev_raster` to get a digital elevation model (DEM) raster (~6.8m resolution).
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # read in elevation data
 # z =14 is highest resolution (~6.8m)
 if(file.exists("../data/bhef_elev.tif") == FALSE){
@@ -138,6 +154,9 @@ gc()
 Use the `lidR` package for manipulating and visualizing point cloud data. See the very [helpful book](https://r-lidar.github.io/lidRbook/index.html) by Roussel, J.R., Goodbody, T.R.H., and Tompalski P. (2021) for more information.
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+  print("Proceeding to next section without processing or overwriting data...")
+}else{
 # list laz files
   lazs <- list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE)
 # change projection of DEM 
@@ -215,11 +234,15 @@ Use the `lidR` package for manipulating and visualizing point cloud data. See th
 #   , th = lidR::util_makeZhangParam()$th
 #   )
 # )
+}
 ```
 
 ### Height normalization using DEM 
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+  print("Proceeding to next section without processing or overwriting data...")
+}else{
 ######################################################
 # Height normalization using DEM 
     # could create own DEM with lidar data ... 
@@ -253,7 +276,7 @@ Use the `lidR` package for manipulating and visualizing point cloud data. See th
 #     # plot(lidR::filter_ground(nlas), color = "Classification", bg = "white")
 #     # summary(nlas$Z)
 #     # table(nlas$Classification)
-    
+
 # descriptive stats
 kable(nlas@data %>% 
         dplyr::group_by(
@@ -297,11 +320,17 @@ kable_material(c("striped", "hover")) %>%
 kable_styling(font_size = 11) 
     
 # ggplot() + geom_histogram(data = (nlas@data %>% dplyr::filter(Classification == 1)), aes(Z), binwidth = 1)
+}
 ```
 
 ### Canopy Height model
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+Points-to-raster algorithm with a resolution of 1 meter. for each pixel of the output raster the function attributes the height of the highest point found.
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+  print("Proceeding to next section without processing or overwriting data...")
+}else{
 ######################################################
 # Canopy Height model
 ######################################################
@@ -356,7 +385,7 @@ kable_styling(font_size = 11)
   #     fill = guide_legend(title="Hgt. (m)")
   #   )  
 
-  
+}
 ```
 
 
@@ -393,7 +422,13 @@ ggplot() +
 
 ### Individual Tree Detection (ITD)
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+Local maximum filtering (LMF) with variable window size. Points below 2 m will equate to a window size of 3 m, while points above 20 meters equate to a window size of 5 m. Anything between 2 and 20 meter will have a non-linear relationship.
+
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+  print("Proceeding to next section without processing or overwriting data...")
+}else{
 ######################################################
 # Individual Tree Detection (ITD)
 ######################################################
@@ -444,6 +479,7 @@ ggplot() +
   # hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
   # add_treetops3d(hey_plot, tree_tops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
   # ?lidR::pixel_metrics()
+}
 ```
 
 #### Distribution of Tree Top Heights
@@ -486,6 +522,9 @@ gc()
 Segment the canopy height model raster grid as individual trees. Create a vector representation of tree groupings and summary statistics of height for each group.
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+  print("Proceeding to next section without processing or overwriting data...")
+}else{
 ######################################################
 # Individual Tree Segmentation (ITS)
 ######################################################
@@ -577,7 +616,7 @@ Segment the canopy height model raster grid as individual trees. Create a vector
       crown_group_area_ha = as.numeric(sf::st_area(.)) / 10000
       , trees_per_ha = count_trees / crown_group_area_ha
     )
-  
+}
 ```
 
 ```{r, warning=F, message=F, echo=FALSE, include=FALSE}
@@ -587,7 +626,7 @@ gc()
 
 ## Lidar-Derived Crown Groups Summary
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 sf::st_intersection(crowns_group, research_plots[1,]) %>% 
 # plot
   ggplot() +
@@ -613,7 +652,7 @@ sf::st_intersection(crowns_group, research_plots[1,]) %>%
 
 ### Crown Group Summary Statistics
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # table
 kable(crowns_group %>% sf::st_set_geometry(NULL) %>% 
         dplyr::group_by(
@@ -659,7 +698,7 @@ kable_styling(font_size = 11)
 
 ## Map Crowns and Rx Fire Area
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # make map
 # different background map types: https://leaflet-extras.github.io/leaflet-providers/preview/
 # names(leaflet.providers::providers_loaded()$providers)
@@ -668,8 +707,14 @@ mapviewOptions(homebutton = FALSE, basemaps = c("Esri.WorldImagery"))
 bhef_crowns_group <- sf::st_intersection(
   crowns_group 
     # dplyr::filter(crown_group_area_ha <= 2)
-  , bhef_boundary %>% dplyr::select(name)
-)
+  , rx_fire %>% dplyr::select(unit) %>% dplyr::slice_sample(prop = .5)
+) %>% 
+sf::st_intersection(., bhef_boundary %>% dplyr::select(name))
+# bhef_crowns_group <- sf::st_intersection(
+#   crowns_group 
+#     # dplyr::filter(crown_group_area_ha <= 2)
+#   , sf::st_buffer(bhef_boundary %>% dplyr::select(name), dist = -500)
+# )
 # map
 mapview(bhef_boundary
         , color = "black"
@@ -689,7 +734,8 @@ mapview(rx_fire
 ) +
 mapview(bhef_crowns_group
         , zcol = "crown_group_class"
-        , col.regions = viridis::viridis(n=length(unique(bhef_crowns_group$crown_group_class)))
+        , col.regions = viridis::turbo(n=length(unique(bhef_crowns_group$crown_group_class)))
+        , lwd = 0
         , alpha.regions = 0.8
         , label = c("lab")
         , legend = FALSE
@@ -710,12 +756,18 @@ mapview(bhef_crowns_group
 ) 
 ```
 
+*Note: crown groups shown for only 50% of Rx Fire units (to enhance rendering performance). Crown group data for entire BHEF is still available.*
 
 ## Write Out Data
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+  print("Proceeding to next section without processing or overwriting data...")
+}else{
 # save cleaned data for reading to R later
 sf::st_write(crowns_group, "../data/crowns_group.gpkg", append = FALSE)
+sf::st_write(tree_tops.gpkg, "../data/tree_tops.gpkg", append = FALSE)
+}
 ```
 
 
