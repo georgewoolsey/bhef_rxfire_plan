@@ -4,6 +4,7 @@ vector_data
 national-forest-management-data-download
 load-research-plot-data
 load-stem-map-data
+load-rx-fire-shapefile
 load-national-forests-shapefile
 load-experimental-forests-shapefile
 harvests
@@ -14,7 +15,7 @@ stem-map-descriptive-statistics.
 map-harvests-research-plots-stem-map
 write-out-data
 stem_map
-download-data-from-natl-map
+download-lidar-data-from-natl-map
 load-vector-data
 load-elevation-data
 load-lidar-data
@@ -23,5 +24,7 @@ canopy-height-model
 individual-tree-detection-itd
 distribution-of-tree-top-heights
 individual-tree-segmentation-its
-plot-crown-groups
-map-harvests-research-plots-stem-map-1
+lidar-derived-crown-groups-summary
+crown-group-summary-statistics
+map-crowns-and-rx-fire-area
+write-out-data-1
