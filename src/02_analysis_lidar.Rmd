@@ -28,9 +28,7 @@ library(terra) # raster math
 sf::sf_use_s2(FALSE)
 ```
 
-## Download Lidar Data From Nat'l Map
-
-The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP) - Lidar, IfSAR" data available marked as "Lidar Point Cloud (LPC)". This download file list was placed in the `data` folder where the code below utilizes it to download data. The "thumbnail" option in the Nat'l Map was used to determine that the "Fugro" data will suffice to cover the BHEF area. Also, downloaded NAIP imagery while had ROI drawn in Nat'l Map.
+## Overwrite Data Switch
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 #######################################################
@@ -43,13 +41,16 @@ The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to ob
 overwrite_it <- FALSE
 ```
 
+## Download Lidar Data From Nat'l Map
+
+The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP) - Lidar, IfSAR" data available marked as "Lidar Point Cloud (LPC)". This download file list was placed in the `data` folder where the code below utilizes it to download data. The "thumbnail" option in the Nat'l Map was used to determine that the "Fugro" data will suffice to cover the BHEF area. Also, downloaded NAIP imagery and 3dep elevation while had ROI drawn in Nat'l Map.
+
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 #######################################################
 #######################################################
-# lidar data
+# download lidar data
 #######################################################
 #######################################################
-
 # open download text file
 urls <- read.delim("../data/usgs_lidar_data.txt", header = FALSE) %>% 
   dplyr::rename(url_path = 1) %>% 
@@ -102,12 +103,15 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 if(file.exists("../data/tree_tops.gpkg") == TRUE & overwrite_it == FALSE){
   tree_tops <- sf::st_read("../data/tree_tops.gpkg")
 }
+if(file.exists("../data/chm.tif") == TRUE & overwrite_it == FALSE){
+  chm <- stars::read_stars("../data/chm.tif")
+}
 
 ```
 
 ## Load Elevation Data
 
-Using `elevatr::get_elev_raster` to get a digital elevation model (DEM) raster (~6.8m resolution).
+The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP) - Lidar, IfSAR" data available marked as "Lidar Point Cloud (LPC)". This download file list was placed in the `data` folder where the code below utilizes it to download data. Using `elevatr::get_elev_raster` to get a digital elevation model (DEM) raster (~6.8m resolution) as a backup.
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # read in elevation data
@@ -122,7 +126,11 @@ if(file.exists("../data/bhef_elev.tif") == FALSE){
 }else{
   bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
 }
+```
 
+### Elevation plot
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # plot
 ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
   scale_fill_viridis_c(option = "cividis", alpha = 0.9, na.value = "transparent") +
@@ -149,7 +157,7 @@ remove(list = c("urls", "elev", "f_nm", "hey_dir", "tifs", "r", "x"))
 gc()
 ```
 
-## Load Lidar Data
+## Lidar Data Processing
 
 Use the `lidR` package for manipulating and visualizing point cloud data. See the very [helpful book](https://r-lidar.github.io/lidRbook/index.html) by Roussel, J.R., Goodbody, T.R.H., and Tompalski P. (2021) for more information.
 
@@ -239,7 +247,9 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 
 ### Height normalization using DEM 
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+Height normalization using the DEM loaded above subtacts the height of the ground surface from the point cloud at the resolution of the DEM raster data. The resulting normalized point cloud data classifies ground points at 0 meter in height (Z) and all points  >0 meters in height is assumed to be non-ground surface cover.
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
@@ -276,8 +286,10 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 #     # plot(lidR::filter_ground(nlas), color = "Classification", bg = "white")
 #     # summary(nlas$Z)
 #     # table(nlas$Classification)
-
+    
+######################################################
 # descriptive stats
+######################################################
 kable(nlas@data %>% 
         dplyr::group_by(
           Classification
@@ -320,14 +332,16 @@ kable_material(c("striped", "hover")) %>%
 kable_styling(font_size = 11) 
     
 # ggplot() + geom_histogram(data = (nlas@data %>% dplyr::filter(Classification == 1)), aes(Z), binwidth = 1)
+
 }
 ```
 
+
 ### Canopy Height model
 
-Points-to-raster algorithm with a resolution of 1 meter. for each pixel of the output raster the function attributes the height of the highest point found.
+Points-to-raster algorithm with a resolution of 1 meter. For each pixel of the output raster the function attributes the height of the highest point found in the pixel from the point cloud.
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
@@ -361,63 +375,37 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
     chm <- chm %>% 
       stars::st_as_stars() %>%
       stars::st_warp(crs = sf::st_crs(bhef_boundary))
-    
-  # plot
-  # ggplot() +
-  #   stars::geom_stars(data = chm_smooth) +
-  #   geom_sf(data = sf::st_crop(bhef_boundary, sf::st_bbox(chm_smooth)), alpha = 0, lwd = 0) +
-  #   scale_fill_viridis_c(option = "mako", alpha = 0.9) +
-  #   labs(
-  #     title = "BHEF Canopy Height Model"
-  #     , subtitle = sf::st_crs(chm_smooth)$input
-  #   ) +
-  #   scale_x_continuous(expand = c(0, 0)) +
-  #   scale_y_continuous(expand = c(0, 0)) +
-  #   theme_bw() +
-  #   theme(
-  #     # legend.position = "bottom"
-  #     # , legend.direction = "horizontal"
-  #     axis.text = element_text(size = 8)
-  #     # , panel.grid = element_blank()
-  #     , panel.border = element_blank()
-  #   ) +
-  #   guides(
-  #     fill = guide_legend(title="Hgt. (m)")
-  #   )  
-
 }
 ```
 
+#### CHM plot
 
-```{r, warning=FALSE, message=FALSE, eval=FALSE, echo=FALSE, include=FALSE}
-xxx <- chm_smooth %>%
-  # create classes based on Steel et al. 2021
-  dplyr::mutate(
-    veg_class = dplyr::case_when(
-      values > 8 ~ 3 # canopy
-      , values >= 2 ~ 2 # subcanopy
-      , values >= 1 ~ 1 # understory
-      , TRUE ~ 0 # ground
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+  # plot
+  ggplot() +
+    stars::geom_stars(data = chm[rx_fire %>% dplyr::slice_head(n = 1)]) +
+    # geom_sf(data = sf::st_crop(bhef_boundary, sf::st_bbox(chm_smooth)), alpha = 0, lwd = 0) +
+    geom_sf(data = rx_fire %>% dplyr::slice_head(n = 1), alpha = 0, lwd = 1, color = "orangered") +
+    scale_fill_viridis_c(option = "mako", alpha = 0.9, na.value = "transparent") +
+    labs(
+      title = "BHEF Canopy Height Model"
+      , subtitle = paste0("sample Rx fire unit (", sf::st_crs(chm)$input, ")")
+    ) +
+    xlab("") +
+    ylab("") +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_bw() +
+    theme(
+      # legend.position = "bottom"
+      # , legend.direction = "horizontal"
+      axis.text = element_text(size = 8)
+      # , panel.grid = element_blank()
+      , panel.border = element_blank()
+    ) +
+    guides(
+      fill = guide_legend(title="Hgt. (m)")
     )
-  ) %>%
-  merge() %>%
-  setNames("z") %>%
-  st_set_dimensions(names = c("x", "y", "band")) %>%
-  # select only the class band
-  dplyr::slice(band, 2) %>%
-  # convert to vector data and merge polygons with identical values
-  sf::st_as_sf(as_points = FALSE, merge = TRUE) %>%
-  # transform to same crs as rest of data
-  sf::st_transform(crs = sf::st_crs(bhef_boundary))
-
-names(xxx)[1] = "veg_class"
-
-ggplot() +
-  geom_sf(data = xxx, aes(fill = as.factor(veg_class)), lwd = 0 ) +
-  scale_fill_viridis_d() +
-  theme_bw()
-
-
 ```
 
 ### Individual Tree Detection (ITD)
@@ -425,7 +413,7 @@ ggplot() +
 Local maximum filtering (LMF) with variable window size. Points below 2 m will equate to a window size of 3 m, while points above 20 meters equate to a window size of 5 m. Anything between 2 and 20 meter will have a non-linear relationship.
 
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
@@ -454,37 +442,46 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
         , TRUE ~ 0 # ground
       )
     )
-    
+}
+```
+
+#### Tree Tops plot
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
   # plot
-  # ggplot() +
-  #   stars::geom_stars(data = chm_smooth) +
-  #   geom_sf(data = tree_tops, color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = ".") +
-  #   scale_fill_viridis_c(option = "mako", alpha = 0.9) +
-  #   labs(
-  #     title = "BHEF Canopy Height Model with Tree Tops Identified (yellow)"
-  #     , subtitle = sf::st_crs(chm_smooth)$input
-  #   ) +
-  #   theme_bw() +
-  #   scale_x_continuous(expand = c(0, 0)) +
-  #   scale_y_continuous(expand = c(0, 0)) +
-  #   theme(
-  #     axis.text = element_text(size = 8)
-  #     # , panel.grid = element_blank()
-  #     , panel.border = element_blank()
-  #   ) +
-  #   guides(
-  #     fill = guide_legend(title="Hgt. (m)")
-  #   )
+  ggplot() +
+    stars::geom_stars(data = chm[rx_fire %>% dplyr::slice_head(n = 1)]) +
+    geom_sf(data = rx_fire %>% dplyr::slice_head(n = 1), alpha = 0, lwd = 1, color = "orangered") +
+    geom_sf(data = sf::st_intersection(tree_tops, rx_fire %>% dplyr::slice_head(n = 1))
+            , color = viridis::viridis(n=1, direction = -1), alpha = 0.7, shape = "."
+    ) +
+    scale_fill_viridis_c(option = "mako", alpha = 0.9, na.value = "transparent") +
+    labs(
+      title = "BHEF Canopy Height Model with Tree Tops Identified (yellow)"
+      , subtitle = paste0("sample Rx fire unit (", sf::st_crs(chm)$input, ")")
+    ) +
+    xlab("") +
+    ylab("") +
+    theme_bw() +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme(
+      axis.text = element_text(size = 8)
+      # , panel.grid = element_blank()
+      , panel.border = element_blank()
+    ) +
+    guides(
+      fill = guide_legend(title="Hgt. (m)")
+    )
   
   # hey_plot <- plot(nlas, color = "Z", breaks = "pretty", bg = "white")
   # add_treetops3d(hey_plot, tree_tops <- lidR::locate_trees(chm_smooth, lmf(ws = ws_fn)), col = "black")
   # ?lidR::pixel_metrics()
-}
 ```
 
 #### Distribution of Tree Top Heights
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 ######################################################
 # height range of tree tops
 ######################################################
@@ -517,11 +514,12 @@ tree_tops %>% sf::st_set_geometry(NULL) %>%
 gc()
 ```
 
-### Individual Tree Segmentation (ITS)
+### Individual Tree Crown (ITC) Segmentation
 
-Segment the canopy height model raster grid as individual trees. Create a vector representation of tree groupings and summary statistics of height for each group.
+Segment the canopy height model raster grid as individual tree crowns (ITC). Following the seeds + growing region algorithm described by [Dalponte and Coomes (2016)](https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/2041-210X.12575) to create a vector representation of tree crowns. Then using the individual tree crowns to create groupings and summary statistics of height for each interconnected crown group.
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6, results='hide'}
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
@@ -531,7 +529,21 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 # implements an algorithm for tree segmentation based on 
   # Dalponte and Coomes (2016) algorithm (see reference). 
   # This is a seeds + growing region algorithm.
-  algo <- lidR::dalponte2016(chm = chm, treetops = tree_tops, th_tree = 2)
+  algo <- lidR::dalponte2016(
+    chm = chm 
+    , treetops = tree_tops
+    # Threshold below which a pixel cannot be a tree
+    , th_tree = 2 
+    # Pixel is added to a region if its height is greater than the tree height multiplied by this value.
+    , th_seed = 0.45 
+    # Pixel is added to a region if its height is greater than the current 
+      # mean height of the region multiplied by this value.
+    , th_cr = 0.55
+    # Maximum value of the crown diameter of a detected tree (in pixels)
+    , max_cr = 10
+    # If treetops contains an attribute with the ID for each tree, the name of this attribute
+    , ID = "treeID"
+  )
   crowns_st <- algo()
 # quick plot
   # plot(crowns_st, col = lidR::pastel.colors(200), main = "Individual Tree Crowns")
@@ -627,15 +639,20 @@ gc()
 ## Lidar-Derived Crown Groups Summary
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-sf::st_intersection(crowns_group, research_plots[1,]) %>% 
 # plot
   ggplot() +
-    geom_sf(aes(fill = crown_group_class), lwd = 0) +
+    geom_sf(data = sf::st_intersection(crowns_group, rx_fire %>% dplyr::slice_head(n = 1))
+      , aes(fill = crown_group_class)
+      , lwd = 0
+    ) +
+    geom_sf(data = rx_fire %>% dplyr::slice_head(n = 1), alpha = 0, lwd = 1, color = "orangered") +
     scale_fill_viridis_d(option = "turbo", alpha = 0.9) + 
     labs(
-      title = "BHEF Crown Groups (1 ha sample area)"
-      , subtitle = sf::st_crs(crowns_group)$input
+      title = "BHEF Crown Groups Classes"
+      , subtitle = paste0("sample Rx fire unit (", sf::st_crs(crowns_group)$input, ")")
     ) +
+    xlab("") +
+    ylab("") +
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
     theme_bw() +
@@ -648,7 +665,6 @@ sf::st_intersection(crowns_group, research_plots[1,]) %>%
     )
   
 ```
-
 
 ### Crown Group Summary Statistics
 
@@ -725,7 +741,7 @@ mapview(bhef_boundary
         , popup = FALSE
 ) +
 mapview(rx_fire
-        , color = "red"
+        , color = "orangered"
         , lwd = 2
         , alpha.regions = 0
         , label = FALSE
@@ -737,7 +753,7 @@ mapview(bhef_crowns_group
         , col.regions = viridis::turbo(n=length(unique(bhef_crowns_group$crown_group_class)))
         , lwd = 0
         , alpha.regions = 0.8
-        , label = c("lab")
+        , label = c("crown_group_class")
         , legend = FALSE
           , popup = popupTable(
               bhef_crowns_group
@@ -760,17 +776,50 @@ mapview(bhef_crowns_group
 
 ## Write Out Data
 
-```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
-if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6, results='hide'}
+if(overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
 # save cleaned data for reading to R later
 sf::st_write(crowns_group, "../data/crowns_group.gpkg", append = FALSE)
-sf::st_write(tree_tops.gpkg, "../data/tree_tops.gpkg", append = FALSE)
+sf::st_write(tree_tops, "../data/tree_tops.gpkg", append = FALSE)
+stars::write_stars(chm, "../data/chm.tif", append = FALSE)
 }
 ```
 
 
+
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE, echo=FALSE, include=FALSE}
+xxx <- chm_smooth %>%
+  # create classes based on Steel et al. 2021
+  dplyr::mutate(
+    veg_class = dplyr::case_when(
+      values > 8 ~ 3 # canopy
+      , values >= 2 ~ 2 # subcanopy
+      , values >= 1 ~ 1 # understory
+      , TRUE ~ 0 # ground
+    )
+  ) %>%
+  merge() %>%
+  setNames("z") %>%
+  st_set_dimensions(names = c("x", "y", "band")) %>%
+  # select only the class band
+  dplyr::slice(band, 2) %>%
+  # convert to vector data and merge polygons with identical values
+  sf::st_as_sf(as_points = FALSE, merge = TRUE) %>%
+  # transform to same crs as rest of data
+  sf::st_transform(crs = sf::st_crs(bhef_boundary))
+
+names(xxx)[1] = "veg_class"
+
+ggplot() +
+  geom_sf(data = xxx, aes(fill = as.factor(veg_class)), lwd = 0 ) +
+  scale_fill_viridis_d() +
+  theme_bw()
+
+
+```
 
 
 ```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE, results='hide'}

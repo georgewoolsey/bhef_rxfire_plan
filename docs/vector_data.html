@@ -23,7 +23,7 @@
 <meta name="author" content="George Woolsey" />
 
 
-<meta name="date" content="2022-08-10" />
+<meta name="date" content="2022-08-15" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -171,22 +171,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 <li><a href="lidar_data.html#lidar_data" id="toc-lidar_data"><span class="toc-section-number">4</span> Analyze Lidar Data<span></span></a>
 <ul>
-<li><a href="lidar_data.html#download-lidar-data-from-natl-map" id="toc-download-lidar-data-from-natl-map"><span class="toc-section-number">4.1</span> Download Lidar Data From Nat’l Map<span></span></a></li>
-<li><a href="lidar_data.html#load-vector-data" id="toc-load-vector-data"><span class="toc-section-number">4.2</span> Load Vector Data<span></span></a></li>
-<li><a href="lidar_data.html#load-elevation-data" id="toc-load-elevation-data"><span class="toc-section-number">4.3</span> Load Elevation Data<span></span></a></li>
-<li><a href="lidar_data.html#load-lidar-data" id="toc-load-lidar-data"><span class="toc-section-number">4.4</span> Load Lidar Data<span></span></a>
+<li><a href="lidar_data.html#overwrite-data-switch" id="toc-overwrite-data-switch"><span class="toc-section-number">4.1</span> Overwrite Data Switch<span></span></a></li>
+<li><a href="lidar_data.html#download-lidar-data-from-natl-map" id="toc-download-lidar-data-from-natl-map"><span class="toc-section-number">4.2</span> Download Lidar Data From Nat’l Map<span></span></a></li>
+<li><a href="lidar_data.html#load-vector-data" id="toc-load-vector-data"><span class="toc-section-number">4.3</span> Load Vector Data<span></span></a></li>
+<li><a href="lidar_data.html#load-elevation-data" id="toc-load-elevation-data"><span class="toc-section-number">4.4</span> Load Elevation Data<span></span></a>
 <ul>
-<li><a href="lidar_data.html#height-normalization-using-dem" id="toc-height-normalization-using-dem"><span class="toc-section-number">4.4.1</span> Height normalization using DEM<span></span></a></li>
-<li><a href="lidar_data.html#canopy-height-model" id="toc-canopy-height-model"><span class="toc-section-number">4.4.2</span> Canopy Height model<span></span></a></li>
-<li><a href="lidar_data.html#individual-tree-detection-itd" id="toc-individual-tree-detection-itd"><span class="toc-section-number">4.4.3</span> Individual Tree Detection (ITD)<span></span></a></li>
-<li><a href="lidar_data.html#individual-tree-segmentation-its" id="toc-individual-tree-segmentation-its"><span class="toc-section-number">4.4.4</span> Individual Tree Segmentation (ITS)<span></span></a></li>
+<li><a href="lidar_data.html#elevation-plot" id="toc-elevation-plot"><span class="toc-section-number">4.4.1</span> Elevation plot<span></span></a></li>
 </ul></li>
-<li><a href="lidar_data.html#lidar-derived-crown-groups-summary" id="toc-lidar-derived-crown-groups-summary"><span class="toc-section-number">4.5</span> Lidar-Derived Crown Groups Summary<span></span></a>
+<li><a href="lidar_data.html#lidar-data-processing" id="toc-lidar-data-processing"><span class="toc-section-number">4.5</span> Lidar Data Processing<span></span></a>
 <ul>
-<li><a href="lidar_data.html#crown-group-summary-statistics" id="toc-crown-group-summary-statistics"><span class="toc-section-number">4.5.1</span> Crown Group Summary Statistics<span></span></a></li>
+<li><a href="lidar_data.html#height-normalization-using-dem" id="toc-height-normalization-using-dem"><span class="toc-section-number">4.5.1</span> Height normalization using DEM<span></span></a></li>
+<li><a href="lidar_data.html#canopy-height-model" id="toc-canopy-height-model"><span class="toc-section-number">4.5.2</span> Canopy Height model<span></span></a></li>
+<li><a href="lidar_data.html#individual-tree-detection-itd" id="toc-individual-tree-detection-itd"><span class="toc-section-number">4.5.3</span> Individual Tree Detection (ITD)<span></span></a></li>
+<li><a href="lidar_data.html#individual-tree-crown-itc-segmentation" id="toc-individual-tree-crown-itc-segmentation"><span class="toc-section-number">4.5.4</span> Individual Tree Crown (ITC) Segmentation<span></span></a></li>
 </ul></li>
-<li><a href="lidar_data.html#map-crowns-and-rx-fire-area" id="toc-map-crowns-and-rx-fire-area"><span class="toc-section-number">4.6</span> Map Crowns and Rx Fire Area<span></span></a></li>
-<li><a href="lidar_data.html#write-out-data-1" id="toc-write-out-data-1"><span class="toc-section-number">4.7</span> Write Out Data<span></span></a></li>
+<li><a href="lidar_data.html#lidar-derived-crown-groups-summary" id="toc-lidar-derived-crown-groups-summary"><span class="toc-section-number">4.6</span> Lidar-Derived Crown Groups Summary<span></span></a>
+<ul>
+<li><a href="lidar_data.html#crown-group-summary-statistics" id="toc-crown-group-summary-statistics"><span class="toc-section-number">4.6.1</span> Crown Group Summary Statistics<span></span></a></li>
+</ul></li>
+<li><a href="lidar_data.html#map-crowns-and-rx-fire-area" id="toc-map-crowns-and-rx-fire-area"><span class="toc-section-number">4.7</span> Map Crowns and Rx Fire Area<span></span></a></li>
+<li><a href="lidar_data.html#write-out-data-1" id="toc-write-out-data-1"><span class="toc-section-number">4.8</span> Write Out Data<span></span></a></li>
 </ul></li>
 </ul>
 
