@@ -41,7 +41,7 @@ sf::sf_use_s2(FALSE)
 overwrite_it <- FALSE
 ```
 
-## Download Lidar Data From Nat'l Map
+## Download Data From Nat'l Map
 
 The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP) - Lidar, IfSAR" data available marked as "Lidar Point Cloud (LPC)". This download file list was placed in the `data` folder where the code below utilizes it to download data. The "thumbnail" option in the Nat'l Map was used to determine that the "Fugro" data will suffice to cover the BHEF area. Also, downloaded NAIP imagery and 3dep elevation while had ROI drawn in Nat'l Map.
 
@@ -83,6 +83,44 @@ urls <- read.delim("../data/usgs_lidar_data.txt", header = FALSE) %>%
       print(paste0(f_nm, " file already exists"))
     }
   }
+#######################################################
+#######################################################
+# download elevation data
+#######################################################
+#######################################################
+  # open download text file
+  urls <- read.delim("../data/usgs_dem_data.txt", header = FALSE) %>% 
+    dplyr::rename(url_path = 1) %>% 
+    dplyr::filter(grepl("FUGRO", toupper(url_path)) == TRUE) %>%
+    dplyr::mutate(
+      orig_fname = word(gsub("/", " ", url_path), -1)
+      , fname_sans_typ = gsub(".laz", "", orig_fname)
+    )
+  
+  
+  # create parent directory for data
+    hey_dir <- "../data/dem/"
+    if(dir.exists(hey_dir)==FALSE){
+      dir.create(hey_dir)
+    }
+  #loop through to download dem data
+    for(i in 1:nrow(urls)){
+      # set up names
+      f_nm <- paste0(hey_dir
+        , urls$orig_fname[i]
+      )
+      options(timeout = 60 * 15)
+      ########################
+      ## download and unzip
+      ########################
+      if(file.exists(f_nm)==FALSE){
+        # download
+        download.file(urls$url_path[i], destfile = f_nm)
+      }else{
+        print(paste0(f_nm, " file already exists"))
+      }
+    }
+
 ```
 
 ## Load Vector Data
@@ -111,21 +149,53 @@ if(file.exists("../data/chm.tif") == TRUE & overwrite_it == FALSE){
 
 ## Load Elevation Data
 
-The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP) - Lidar, IfSAR" data available marked as "Lidar Point Cloud (LPC)". This download file list was placed in the `data` folder where the code below utilizes it to download data. Using `elevatr::get_elev_raster` to get a digital elevation model (DEM) raster (~6.8m resolution) as a backup.
+The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to obtain a list of file download links for "Elevation Source Data (3DEP)" data. Using `elevatr::get_elev_raster` to get a digital elevation model (DEM) raster (~6.8m resolution) as a backup.
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# read in elevation data
-# z =14 is highest resolution (~6.8m)
-if(file.exists("../data/bhef_elev.tif") == FALSE){
-  elev <- elevatr::get_elev_raster(bhef_boundary, z = 14)
-  # sf::st_crs(elev) == sf::st_crs(bhef_boundary)
-  bhef_elev <- stars::st_as_stars(elev)
-    # sf::st_transform(crs = sf::st_crs(bhef_boundary))
-  # save
-  stars::write_stars(bhef_elev, "../data/bhef_elev.tif", append = FALSE)
-}else{
-  bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
-}
+#######################################################
+#######################################################
+# read elevation data
+#######################################################
+#######################################################
+  if(file.exists("../data/bhef_elev.tif") == FALSE){
+    #######################################################
+    # 1 m dem
+    #######################################################
+      # tifs <- list.files("../data/dem/", pattern = "\\.tif$", full.names = TRUE)
+      # 
+      # newgrid <- bhef_boundary %>%
+      #   sf::st_buffer(dist = 10000) %>% 
+      #   sf::st_bbox() %>%
+      #   stars::st_as_stars(dx = 1, dy = 1)
+      #   # stars::st_as_stars()
+      #   
+      # # read files
+      # for(i in 1:length(tifs)){
+      #   f_nm <- paste0("elev_", i)
+      #   assign(f_nm,
+      #         stars::read_stars(tifs[i]) %>% 
+      #           stars::st_warp(newgrid) %>% 
+      #           setNames("elev")
+      #           # sf::st_transform(crs = sf::st_crs(bhef_boundary))
+      #   )
+      # }
+      # # mosaic together !!!!!!!!!!!!!!! NEED TO REMOVE HARD-CODING OF OBJECT NAMES
+      # elev <- stars::st_mosaic(elev_1, elev_2, elev_3, elev_4)
+      # remove(list = ls(pattern = "elev_") )
+      # bhef_elev <- elev[sf::st_buffer(bhef_boundary %>% dplyr::select(name), dist = 1000)]
+    #######################################################
+    # not 1 m dem
+    #######################################################
+      # z =14 is highest resolution (~6.8m)
+      elev <- elevatr::get_elev_raster(bhef_boundary, z = 14)
+      # sf::st_crs(elev) == sf::st_crs(bhef_boundary)
+      bhef_elev <- stars::st_as_stars(elev)
+        # sf::st_transform(crs = sf::st_crs(bhef_boundary))
+      # save
+    stars::write_stars(bhef_elev, "../data/bhef_elev.tif", append = FALSE)
+  }else{
+    bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
+  }
 ```
 
 ### Elevation plot
@@ -138,6 +208,8 @@ ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
       title = "BHEF Elevation Map"
       , subtitle = sf::st_crs(bhef_elev)$input
     ) +
+  xlab("") +
+  ylab("") +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   theme_bw() +
@@ -249,7 +321,7 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 
 Height normalization using the DEM loaded above subtacts the height of the ground surface from the point cloud at the resolution of the DEM raster data. The resulting normalized point cloud data classifies ground points at 0 meter in height (Z) and all points  >0 meters in height is assumed to be non-ground surface cover.
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
+```{r, warning=F, message=F, fig.width = 12, fig.height = 6, results='hide'}
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
@@ -668,7 +740,7 @@ gc()
 
 ### Crown Group Summary Statistics
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 12, fig.height = 6}
 # table
 kable(crowns_group %>% sf::st_set_geometry(NULL) %>% 
         dplyr::group_by(

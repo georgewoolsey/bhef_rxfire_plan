@@ -426,7 +426,7 @@ gc()
 
 ### Stem Map Descriptive statistics.
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, fig.width = 12, fig.height = 6}
 # descriptive stats
 kable(stem_map %>% sf::st_set_geometry(NULL) %>% 
         dplyr::group_by(
