@@ -50,7 +50,84 @@ rx_fire <- sf::st_read("../data/rx_fire.gpkg")
 crowns_group <- sf::st_read("../data/crowns_group.gpkg")
 # tree_tops <- sf::st_read("../data/tree_tops.gpkg")
 # chm <- stars::read_stars("../data/chm.tif")
+
+# add colors to the crowns group
+col_data <- data.frame(
+  crown_group_class = sort(unique(crowns_group$crown_group_class))
+  , crown_group_class_color = viridis::turbo(n = length(unique(crowns_group$crown_group_class)), alpha = 0.5)
+)
+crowns_group <- crowns_group %>% 
+  # dplyr::select(-crown_group_class_color) %>% 
+  dplyr::left_join(col_data, by = c("crown_group_class"="crown_group_class"))
 ```
+
+
+## Read NAIP Data
+
+[National Agriculture Imagery Program (NAIP)](https://naip-usdaonline.hub.arcgis.com/) imagery for the BHEF was *manually* ;/ downloaded from the [USGS Science Data Explorer](https://ers.cr.usgs.gov/). 
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
+# load with stars
+naip_st <- stars::read_stars("../data/naip/bhef_naip_20200809_1m.tif") 
+
+# crop
+naip_st <- naip_st %>% 
+  sf::st_crop(., sf::st_buffer(sf::st_transform(bhef_boundary, crs = sf::st_crs(naip_st)), dist = 500))
+
+# plot(naip_st %>% dplyr::slice(band, 1:3), axes = TRUE)
+# plot(naip_st[,,,3:1], axes = TRUE)
+
+# set rgb image
+# band 3 = red, band 2 = green, band 1 = blue
+naip_rgb <- stars::st_rgb(
+  naip_st[,,,3:1]
+  , dimension = 3
+  , use_alpha = FALSE
+  # , stretch = "histogram"
+  , probs = c(0.005, 0.995)
+  , stretch = "percent"
+)
+
+ggplot() +
+  stars::geom_stars(data = naip_rgb[
+    rx_fire %>% dplyr::slice(3) %>% 
+    sf::st_buffer(dist = 50) %>% 
+    sf::st_transform(crs = sf::st_crs(naip_st)) %>% 
+    sf::st_bbox()
+  ]) +
+  scale_fill_identity() + # !!! don't take this out or RGB plot will kill your computer
+  geom_sf(data = rx_fire %>%
+          dplyr::slice(3) %>%
+          sf::st_transform(crs = sf::st_crs(naip_st))
+      , alpha = 0
+      , lwd = 1.5
+      , color = "orangered"
+  ) +
+  geom_sf(data = crowns_group %>%
+            sf::st_crop(
+              rx_fire %>% dplyr::slice(3) %>%
+              sf::st_buffer(dist = 50) %>%
+              sf::st_bbox()
+            ) %>%
+            sf::st_transform(crs = sf::st_crs(naip_st))
+      , lwd = 0
+      , aes(fill = crown_group_class_color)
+  ) +
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+    , legend.direction = "horizontal"
+    , legend.title = element_blank()
+    , axis.text = element_text(size = 8)
+    , panel.border = element_blank()
+  )
+
+```
+
 
 ## Forest Cover Summary
 

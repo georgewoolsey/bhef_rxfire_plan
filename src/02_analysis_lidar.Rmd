@@ -238,7 +238,7 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
 # list laz files
-  lazs <- sort(list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE), decreasing = TRUE)
+  lazs <- sort(list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE), decreasing = FALSE)
 # change projection of DEM 
   # # creating a new regular grid in a new CRS
   # newgrid <- bhef_boundary %>% 
