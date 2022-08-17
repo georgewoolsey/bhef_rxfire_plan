@@ -87,45 +87,119 @@ naip_rgb <- stars::st_rgb(
   , probs = c(0.005, 0.995)
   , stretch = "percent"
 )
+```
 
+## Post-Lidar Acquisition Timber Harvests
+
+Lidar data was collected in 2017. Spatially identify areas within BHEF where timber harvest (not including TSI) treatments occurred in 2017 or later. 
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# find harvests after lidar collection
+harvests_post_lidar <- bhef_harvests %>% 
+  dplyr::filter(year_id >= 2017) %>% 
+  sf::st_intersection(bhef_boundary)
+
+# plot
 ggplot() +
-  stars::geom_stars(data = naip_rgb[
-    rx_fire %>% dplyr::slice(3) %>% 
-    sf::st_buffer(dist = 50) %>% 
-    sf::st_transform(crs = sf::st_crs(naip_st)) %>% 
-    sf::st_bbox()
-  ]) +
-  scale_fill_identity() + # !!! don't take this out or RGB plot will kill your computer
-  geom_sf(data = rx_fire %>%
-          dplyr::slice(3) %>%
-          sf::st_transform(crs = sf::st_crs(naip_st))
-      , alpha = 0
-      , lwd = 1.5
-      , color = "orangered"
-  ) +
-  geom_sf(data = crowns_group %>%
-            sf::st_crop(
-              rx_fire %>% dplyr::slice(3) %>%
-              sf::st_buffer(dist = 50) %>%
-              sf::st_bbox()
-            ) %>%
-            sf::st_transform(crs = sf::st_crs(naip_st))
+  geom_sf(data = harvests_post_lidar
+      , aes(fill = treatment_type_grp)
       , lwd = 0
-      , aes(fill = crown_group_class_color)
+    ) +
+    geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
+    geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
+    geom_sf_label(data = rx_fire, aes(label = unit)
+      , label.size = NA
+      , alpha = 0
+      , size = 2
+    ) +
+    scale_fill_viridis_d(option = "viridis", alpha = 0.8) + 
+    labs(
+      title = "BHEF Post-Lidar Acquisition Timber Harvests"
+      , subtitle = paste0("Rx fire units")
+      , caption = paste0(
+        "*Percent of BHEF Area Harvested Post-Lidar: "
+        , scales::percent(
+          as.numeric(sum(sf::st_area(harvests_post_lidar))) / as.numeric(sum(sf::st_area(bhef_boundary)))
+          , accuracy = 0.1
+        )
+      )
+    ) +
+    xlab("") +
+    ylab("") +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom"
+      , legend.title = element_blank()
+      , axis.text = element_text(size = 8)
+      , panel.border = element_blank()
+      , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+      , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
+      , plot.caption = element_text(size=10, face="bold.italic")
+    )
+```
+
+### Join Harvests to Rx Fire Units
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+rx_fire <- rx_fire %>% 
+  dplyr::left_join(
+    rx_fire %>% 
+      dplyr::select(unit) %>% 
+      sf::st_intersection(
+        sf::st_union(harvests_post_lidar %>% dplyr::select(nffid))
+      ) %>% 
+      dplyr::mutate(postlidar_harvest_area_m2 = as.numeric(sf::st_area(.))) %>% 
+      sf::st_set_geometry(NULL) %>% 
+      dplyr::group_by(unit) %>% 
+      dplyr::summarise(postlidar_harvest_area_m2 = sum(postlidar_harvest_area_m2)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(unit, postlidar_harvest_area_m2)
+    , by = c("unit" = "unit")
+  ) %>% 
+  dplyr::mutate(
+    has_postlidar_harvest = ifelse(!is.na(postlidar_harvest_area_m2), 1, 0)
+    , postlidar_harvest_area_m2 = ifelse(!is.na(postlidar_harvest_area_m2), postlidar_harvest_area_m2, 0)
+    , postlidar_harvest_area_ha = ifelse(!is.na(postlidar_harvest_area_m2), postlidar_harvest_area_m2/10000, 0)
+    , area_m2 = as.numeric(sf::st_area(.))
+    , area_ha = as.numeric(sf::st_area(.)) / 10000
+    , pct_postlidar_harvest_area = postlidar_harvest_area_m2 / area_m2
+  )
+
+
+# plot
+ggplot(data = rx_fire) + 
+  geom_col(aes(y = reorder(unit, pct_postlidar_harvest_area), x = area_ha)
+           , width = 0.7, fill = "navy", alpha = 0.5
   ) +
-  xlab("") +
-  ylab("") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
+  geom_col(aes(y = reorder(unit, pct_postlidar_harvest_area), x = postlidar_harvest_area_ha)
+           , width = 0.7, fill = "navy", alpha = 0.9
+  ) +
+  geom_text(
+    aes(y = reorder(unit, pct_postlidar_harvest_area)
+        , x = 0
+        , label = scales::percent(pct_postlidar_harvest_area, accuracy = 1)
+      )
+    , color = "white"
+    , size = 3
+    , fontface = "bold"
+    , hjust = -0.1
+    , vjust = 0.1
+  ) +
+  labs(
+      title = "Percent of Rx Fire Unit Area with Timber Harvest Post-Lidar Acquisition"
+      # , subtitle = "within BHEF boundary and bounding box of research plot area"
+    ) +
+  xlab("Area (ha)") +
+  ylab("Rx Fire Unit") +
+  scale_x_continuous(labels = scales::comma) +
   theme_bw() +
   theme(
     legend.position = "none"
-    , legend.direction = "horizontal"
-    , legend.title = element_blank()
-    , axis.text = element_text(size = 8)
-    , panel.border = element_blank()
+    , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , axis.text.y = element_text(size = 10, face = "bold")
   )
-
 ```
 
 
@@ -209,44 +283,64 @@ ggplot(data = crowns_group_area_sum) +
   theme_bw() +
   theme(
     legend.position = "none"
+    , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , axis.text.y = element_text(size = 10, face = "bold")
   )
 ```
 
-
 ```{r, warning=F, message=F, echo=FALSE, include=FALSE}
 remove(bhef_area_ha, forestcov_area_ha, non_forestcov_area_ha, temp_dta)
+gc()
 ```
+
 
 ## Spatial Area by Crown Group Class
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# plot
-  ggplot() +
-    geom_sf(data = crowns_group %>% dplyr::slice_sample(prop = 0.2)
-      , aes(fill = crown_group_class)
+asdfsadf
+
+## Spatial Area by Crown Group Class
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
+ggplot() +
+  stars::geom_stars(data = naip_rgb[
+    rx_fire %>% dplyr::slice(3) %>% 
+    sf::st_buffer(dist = 50) %>% 
+    sf::st_transform(crs = sf::st_crs(naip_st)) %>% 
+    sf::st_bbox()
+  ]) +
+  scale_fill_identity() + # !!! don't take this out or RGB plot will kill your computer
+  geom_sf(data = rx_fire %>%
+          dplyr::slice(3) %>%
+          sf::st_transform(crs = sf::st_crs(naip_st))
+      , alpha = 0
+      , lwd = 1.5
+      , color = "orangered"
+  ) +
+  geom_sf(data = crowns_group %>%
+            sf::st_crop(
+              rx_fire %>% dplyr::slice(3) %>%
+              sf::st_buffer(dist = 50) %>%
+              sf::st_bbox()
+            ) %>%
+            sf::st_transform(crs = sf::st_crs(naip_st))
       , lwd = 0
-    ) +
-    facet_wrap(~crown_group_class) +
-    geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
-    scale_fill_viridis_d(option = "turbo", alpha = 0.9) + 
-    labs(
-      title = "BHEF Crown Groups Classes"
-      , subtitle = paste0("sample Rx fire unit (", sf::st_crs(crowns_group)$input, ")")
-    ) +
-    xlab("") +
-    ylab("") +
-    scale_x_continuous(expand = c(0, 0)) +
-    scale_y_continuous(expand = c(0, 0)) +
-    theme_bw() +
-    theme(
-      legend.position = "bottom"
-      , legend.title = element_blank()
-      , axis.text = element_text(size = 8)
-      # , panel.grid = element_blank()
-      , panel.border = element_blank()
-    )
-  
+      , aes(fill = crown_group_class_color)
+  ) +
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+    , legend.direction = "horizontal"
+    , legend.title = element_blank()
+    , axis.text = element_text(size = 8)
+    , panel.border = element_blank()
+  )
+
 ```
+
 
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
