@@ -128,7 +128,7 @@ urls <- read.delim("../data/usgs_lidar_data.txt", header = FALSE) %>%
 Spatial data was loaded and cleaned in [prior chapter](#vector_data). 
 
 ```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
-# save cleaned data for reading to R later
+# read
 forests_bhnf <- sf::st_read("../data/forests_bhnf.gpkg")
 bhef_boundary <- sf::st_read("../data/bhef_boundary.gpkg")
 bhef_harvests <- sf::st_read("../data/bhef_harvests.gpkg")
@@ -485,9 +485,6 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 
 Local maximum filtering (LMF) with variable window size. Points below 2 m will equate to a window size of 3 m, while points above 20 meters equate to a window size of 5 m. Anything between 2 and 20 meter will have a non-linear relationship.
 
-Tree classes are based on [Steel et al. 2021](https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/1365-2745.13764?casa_token=ob4t10qIRrsAAAAA:qYNA0_uawnsPC4EJ6O5Jz2GCeaA2BXNOUUJBIVFiS2ic-Pm9L5FafLhVtIWg4flYGsEsJgWgMNuPx0w). The height thresholds used to define canopy (>8 m), subcanopy (2–8 m) and understory (1–2 m).
-
-
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
@@ -627,8 +624,8 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   crowns_sf <- crowns_st %>% 
     # convert to vector data and merge polygons with identical pixel values
     sf::st_as_sf(as_points = FALSE, merge = TRUE) %>% 
-    # transform to same crs as rest of data
-    sf::st_transform(crs = st_crs(bhef_boundary)) %>% 
+    # transform to same crs as rest of data # transformed las data above instead
+    # sf::st_transform(crs = st_crs(bhef_boundary)) %>% 
     dplyr::mutate(
       tree_id = values
       , crown_area = sf::st_area(.)
@@ -713,6 +710,29 @@ gc()
 
 ## Lidar-Derived Crown Groups Summary
 
+Tree classes are based on [Steel et al. 2021](https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/1365-2745.13764?casa_token=ob4t10qIRrsAAAAA:qYNA0_uawnsPC4EJ6O5Jz2GCeaA2BXNOUUJBIVFiS2ic-Pm9L5FafLhVtIWg4flYGsEsJgWgMNuPx0w). Height thresholds were used to define canopy (>8 m), subcanopy (2–8 m) and understory (1–2 m). Crown groups are defined by the number of trees in a crown group and the composition of canopy and subcanopy trees in the group:
+
+  * **Individual Tree** : single tree (canopy or subcanopy) without interlocking crown
+  
+  * **Small Group - Canopy** : 2-10 trees with interlocking crowns where 75% or more of the trees are canopy (>8 m)
+  
+  * **Small Group - Subcanopy** : 2-10 trees with interlocking crowns where 75% or more of the trees are subcanopy (2-8 m)
+  
+  * **Small Group - Mixed** : 2-10 trees with interlocking crowns with neither canopy nor subcanopy comprising >75% of trees
+  
+  * **Medium Group - Canopy** : 11-40 trees with interlocking crowns where 75% or more of the trees are canopy (>8 m)
+  
+  * **Medium Group - Subcanopy** : 11-40 trees with interlocking crowns where 75% or more of the trees are subcanopy (2-8 m)
+  
+  * **Medium Group - Mixed** : 11-40 trees with interlocking crowns with neither canopy nor subcanopy comprising >75% of trees
+  
+  * **Continuous - Canopy** : >40 trees with interlocking crowns where 75% or more of the trees are canopy (>8 m)
+  
+  * **Continuous - Subcanopy** : >40 trees with interlocking crowns where 75% or more of the trees are subcanopy (2-8 m)
+  
+  * **Continuous - Mixed** : >40 trees with interlocking crowns with neither canopy nor subcanopy comprising >75% of trees
+  
+
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # plot
   ggplot() +
@@ -741,7 +761,7 @@ gc()
   
 ```
 
-### Crown Group Summary Statistics
+### Crown Group Summary Statistics {#cg_sum}
 
 ```{r, warning=F, message=F, fig.width = 12, fig.height = 6}
 # table
@@ -755,9 +775,9 @@ kable(crowns_group %>% sf::st_set_geometry(NULL) %>%
           , mean_m2 = mean(crown_group_area_ha, na.rm = TRUE) * 10000
           , trees_per_ha = mean(trees_per_ha, na.rm = TRUE)
           , mean_count_trees = mean(count_trees, na.rm = TRUE)
-          , mean_count_trees_canopy = sum(count_trees_canopy, na.rm = TRUE)
-          , mean_count_trees_subcanopy = sum(count_trees_subcanopy, na.rm = TRUE)
-          , mean_hgt_m = mean(min_hgt_m, na.rm = TRUE)
+          , mean_count_trees_canopy = mean(count_trees_canopy, na.rm = TRUE)
+          , mean_count_trees_subcanopy = mean(count_trees_subcanopy, na.rm = TRUE)
+          , mean_hgt_m = mean(mean_hgt_m, na.rm = TRUE)
           # , min_hgt_m = min(min_hgt_m, na.rm = TRUE)
           # , max_hgt_m = max(max_hgt_m, na.rm = TRUE)
         ) %>% 
@@ -782,8 +802,9 @@ kable(crowns_group %>% sf::st_set_geometry(NULL) %>%
 # kable_classic() %>%
 add_header_above(c(" " = 2, "Mean" = 6)) %>%
 kable_material(c("striped", "hover")) %>%
-# column_spec(., 2, width = "20em") %>% 
-kable_styling(font_size = 11) 
+kable_styling(font_size = 9) %>% 
+column_spec(1, bold = TRUE, width = "1em")
+
 
 ```
 
@@ -859,6 +880,7 @@ if(overwrite_it == FALSE){
 sf::st_write(crowns_group, "../data/crowns_group.gpkg", append = FALSE)
 sf::st_write(tree_tops, "../data/tree_tops.gpkg", append = FALSE)
 stars::write_stars(chm, "../data/chm.tif", append = FALSE)
+stars::write_stars(crowns_st, "../data/crowns_st.tif", append = FALSE)
 }
 ```
 

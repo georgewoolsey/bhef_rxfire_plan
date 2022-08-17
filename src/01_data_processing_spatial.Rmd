@@ -468,8 +468,9 @@ kable(stem_map %>% sf::st_set_geometry(NULL) %>%
 # kable_classic() %>%
 add_header_above(c(" " = 3, "DBH (in.)" = 3, "QMD (in.)" = 1, "Height (ft.)" = 4)) %>% 
 kable_material(c("striped", "hover")) %>%
-# column_spec(., 2, width = "20em") %>% 
-kable_styling(font_size = 11)
+kable_styling(font_size = 9) %>% 
+column_spec(1, bold = TRUE, width = "1em")
+
 
 ```
 
