@@ -103,7 +103,7 @@ harvests_post_lidar <- bhef_harvests %>%
 ggplot() +
   geom_sf(data = harvests_post_lidar
       , aes(fill = treatment_type_grp)
-      , lwd = 0
+      , lwd = NA
     ) +
     geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
     geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
@@ -138,7 +138,12 @@ ggplot() +
       , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
       , plot.caption = element_text(size=10, face="bold.italic")
     )
+
 ```
+
+
+There have been **`r scales::comma(as.numeric(sum(sf::st_area(harvests_post_lidar)))/10000, accuracy = 1)` hectares** in BHEF with timber harvest treatments completed after the lidar acquisition in 2017. This represents **`r scales::percent(as.numeric(sum(sf::st_area(harvests_post_lidar))) / as.numeric(sum(sf::st_area(bhef_boundary))), accuracy = 0.1)`** of the total BHEF area (**`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/10000, accuracy = 1)` hectares**).
+      
 
 ### Join Harvests to Rx Fire Units
 
@@ -233,16 +238,18 @@ For reference, tree classes are based on [Steel et al. 2021](https://besjournals
 
 The total area of the BHEF is approximately **`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/10000, accuracy = 1)` hectares (`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/4047, accuracy = 1)` acres)**. 
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # set up data
-bhef_area_ha <- as.numeric(sf::st_area(bhef_boundary))/10000
-forestcov_area_ha <- sum(crowns_group$crown_group_area_ha, na.rm = TRUE)
+bhef_area_ha <- sum(as.numeric(sf::st_area(bhef_boundary))/10000)
+forestcov_area_ha <- sum(as.numeric(sf::st_area(sf::st_intersection(crowns_group, bhef_boundary)))/10000, na.rm = TRUE)
 non_forestcov_area_ha <- bhef_area_ha - forestcov_area_ha
 temp_dta <- data.frame(
   crown_group_class = "Non-Tree Cover"
   , area_ha = non_forestcov_area_ha
 )
 crowns_group_area_sum <- crowns_group %>% 
+  sf::st_intersection(bhef_boundary) %>% 
+  dplyr::mutate(crown_group_area_ha = as.numeric(sf::st_area(.))/10000) %>% 
   sf::st_set_geometry(NULL) %>% 
   dplyr::group_by(crown_group_class) %>%
   dplyr::summarise(area_ha = sum(crown_group_area_ha, na.rm = TRUE)) %>% 
@@ -286,6 +293,7 @@ ggplot(data = crowns_group_area_sum) +
     , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
     , axis.text.y = element_text(size = 10, face = "bold")
   )
+
 ```
 
 ```{r, warning=F, message=F, echo=FALSE, include=FALSE}
@@ -293,10 +301,150 @@ remove(bhef_area_ha, forestcov_area_ha, non_forestcov_area_ha, temp_dta)
 gc()
 ```
 
+## No Harvest Post-Lidar Area by Crown Group Class
+
+The total area of the BHEF which has *not* been harvested after the 2017 lidar acquisition is approximately **`r scales::comma(as.numeric(sum(sf::st_area(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar)))))/10000, accuracy = 1)` hectares (`r scales::comma( as.numeric(sum(sf::st_area(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar)))))/4047, accuracy = 1)` acres)**. 
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# set up data
+bhef_area_ha <- sum(as.numeric(sf::st_area(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar))))/10000)
+forestcov_area_ha <- sum(as.numeric(sf::st_area(sf::st_intersection(crowns_group, sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar)))))/10000, na.rm = TRUE)
+non_forestcov_area_ha <- bhef_area_ha - forestcov_area_ha
+temp_dta <- data.frame(
+  crown_group_class = "Non-Tree Cover"
+  , area_ha = non_forestcov_area_ha
+)
+crowns_group_area_sum_woharv <- crowns_group %>% 
+  sf::st_intersection(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar))) %>% 
+  dplyr::mutate(crown_group_area_ha = as.numeric(sf::st_area(.))/10000) %>% 
+  sf::st_set_geometry(NULL) %>% 
+  dplyr::group_by(crown_group_class) %>%
+  dplyr::summarise(area_ha = sum(crown_group_area_ha, na.rm = TRUE)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::bind_rows(temp_dta) %>% 
+  dplyr::mutate(
+    pct_area = area_ha / bhef_area_ha
+  ) %>% 
+  dplyr::arrange(desc(area_ha))
+# plot
+ggplot(data = crowns_group_area_sum_woharv) + 
+  geom_col(aes(y = reorder(crown_group_class, area_ha), x = area_ha, fill = area_ha), width = 0.7) +
+  geom_text(
+    aes(y = reorder(crown_group_class, area_ha), x = area_ha + 2, label = scales::comma(area_ha, accuracy = 1))
+    , color = "black"
+    , size = 4
+    , fontface = "bold"
+    # , position = position_dodge(0.9)
+    , hjust = -0.1
+    , vjust = -0.5
+  ) +
+  geom_text(
+    aes(y = reorder(crown_group_class, area_ha), x = area_ha + 2, label = scales::percent(pct_area, accuracy = 1))
+    , color = "black"
+    , size = 3
+    # , position = position_dodge(0.9)
+    , hjust = -0.1
+    , vjust = 0.5
+  ) +
+  labs(
+      title = "No Harvest Post-Lidar BHEF Area (ha) by Crown Group Class"
+      # , subtitle = "within BHEF boundary and bounding box of research plot area"
+    ) +
+  xlab("Area (ha)") +
+  ylab("") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_fill_viridis_c(alpha = 0.7, option = "cividis", direction = -1) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+    , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , axis.text.y = element_text(size = 10, face = "bold")
+  )
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(bhef_area_ha, forestcov_area_ha, non_forestcov_area_ha, temp_dta)
+gc()
+```
 
 ## Spatial Area by Crown Group Class
 
-asdfsadf
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+my_data <- crowns_group %>% sf::st_intersection(bhef_boundary)
+my_class <- sort(unique(crowns_group$crown_group_class))[1]
+
+#generate title
+  my_title <- paste0(my_class, " Spatial Arrangement on BHEF")
+  my_subtitle <- paste0(
+    scales::percent(
+      (crowns_group_area_sum %>% dplyr::filter(crown_group_class==my_class))$pct_area
+      , accuracy = 1
+    )
+    , " of total BHEF Area"
+  )
+  #plot
+  (
+  ggplot() +
+      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
+      geom_sf(data = my_data %>% 
+                dplyr::filter(crown_group_class==my_class)
+          , aes(fill = crown_group_class_color)
+          , lwd = NA
+      ) +
+      labs(
+        title = my_title
+        , subtitle = my_subtitle
+      ) +
+      xlab("") +
+      ylab("") +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      theme_bw() +
+      theme(
+        legend.position = "none"
+        , legend.direction = "horizontal"
+        , legend.title = element_blank()
+        , axis.text = element_text(size = 8)
+        , panel.border = element_blank()
+        , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=8, face="italic", color="gray20", margin = margin(0,0,0,0))
+      )
+    
+  )
+
+# function to create line graph of temp by year for each site
+my_full_area_map <- function(my_data, my_year){
+  #generate title
+  my_title <- paste0(as.character(my_year), " Average Temperature by Month")
+  #plot
+  (
+  ggplot(my_data %>% filter(year==my_year), aes(x = (month), y = mean_temp, color = site)) +
+    geom_line(alpha=0.8, size = 1.3) + 
+    geom_point(alpha=0.8, size = 1.3) + 
+    scale_x_discrete(limits=month.abb) +
+    labs(
+        title = my_title
+        , subtitle = "Swamp Angel Study Plot and Senator Beck Study Plot"
+      ) +
+    ylab("Mean Temp. (K)") +
+    xlab("") +
+    scale_color_brewer(palette = "Dark2") +
+    theme_bw() +
+    theme(
+      legend.position="bottom"
+      , legend.box = "horizontal"
+      , axis.text.x = element_text(size = 11)
+    )
+  )
+}
+
+# plot with loop to create a plot for each year
+my_years <- c(2005:2010)
+for (i in 1:length(my_years)) {
+  print( my_full_area_map(metoc_site_year_mo, my_years[i]) )
+}
+```
+
 
 ## Spatial Area by Crown Group Class
 
@@ -323,7 +471,7 @@ ggplot() +
               sf::st_bbox()
             ) %>%
             sf::st_transform(crs = sf::st_crs(naip_st))
-      , lwd = 0
+      , lwd = NA
       , aes(fill = crown_group_class_color)
   ) +
   xlab("") +
