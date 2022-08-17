@@ -103,41 +103,46 @@ harvests_post_lidar <- bhef_harvests %>%
 ggplot() +
   geom_sf(data = harvests_post_lidar
       , aes(fill = treatment_type_grp)
-      , lwd = NA
+      , lwd = 0
     ) +
-    geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
-    geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
-    geom_sf_label(data = rx_fire, aes(label = unit)
-      , label.size = NA
-      , alpha = 0
-      , size = 2
-    ) +
-    scale_fill_viridis_d(option = "viridis", alpha = 0.8) + 
-    labs(
-      title = "BHEF Post-Lidar Acquisition Timber Harvests"
-      , subtitle = paste0("Rx fire units")
-      , caption = paste0(
-        "*Percent of BHEF Area Harvested Post-Lidar: "
-        , scales::percent(
-          as.numeric(sum(sf::st_area(harvests_post_lidar))) / as.numeric(sum(sf::st_area(bhef_boundary)))
-          , accuracy = 0.1
-        )
+  geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
+  geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
+  geom_sf_label(data = rx_fire, aes(label = unit)
+    , label.size = NA
+    , alpha = 0
+    , size = 2
+  ) +
+  geom_sf_label(data = harvests_post_lidar, aes(label = year_id)
+    , label.size = NA
+    , alpha = 0
+    , size = 2.5
+  ) +
+  scale_fill_viridis_d(option = "viridis", alpha = 0.8) + 
+  labs(
+    title = "BHEF Post-Lidar Acquisition Timber Harvests"
+    , subtitle = paste0("Rx fire units")
+    , caption = paste0(
+      "*Percent of BHEF Area Harvested Post-Lidar: "
+      , scales::percent(
+        as.numeric(sum(sf::st_area(harvests_post_lidar))) / as.numeric(sum(sf::st_area(bhef_boundary)))
+        , accuracy = 0.1
       )
-    ) +
-    xlab("") +
-    ylab("") +
-    scale_x_continuous(expand = c(0, 0)) +
-    scale_y_continuous(expand = c(0, 0)) +
-    theme_bw() +
-    theme(
-      legend.position = "bottom"
-      , legend.title = element_blank()
-      , axis.text = element_text(size = 8)
-      , panel.border = element_blank()
-      , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
-      , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
-      , plot.caption = element_text(size=10, face="bold.italic")
     )
+  ) +
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom"
+    , legend.title = element_blank()
+    , axis.text = element_text(size = 8)
+    , panel.border = element_blank()
+    , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
+    , plot.caption = element_text(size=10, face="bold.italic")
+  )
 
 ```
 
@@ -367,15 +372,14 @@ remove(bhef_area_ha, forestcov_area_ha, non_forestcov_area_ha, temp_dta)
 gc()
 ```
 
-## Spatial Area by Crown Group Class
+## Spatial Arrangement by Crown Group Class
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-my_data <- crowns_group %>% sf::st_intersection(bhef_boundary)
-my_class <- sort(unique(crowns_group$crown_group_class))[1]
-
-#generate title
-  my_title <- paste0(my_class, " Spatial Arrangement on BHEF")
-  my_subtitle <- paste0(
+# function to map for each cover class
+my_full_area_map <- function(my_data, my_class){
+  #generate title
+  my_title <- paste0(my_class)
+  my_caption <- paste0(
     scales::percent(
       (crowns_group_area_sum %>% dplyr::filter(crown_group_class==my_class))$pct_area
       , accuracy = 1
@@ -386,14 +390,21 @@ my_class <- sort(unique(crowns_group$crown_group_class))[1]
   (
   ggplot() +
       geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
+      geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
       geom_sf(data = my_data %>% 
                 dplyr::filter(crown_group_class==my_class)
-          , aes(fill = crown_group_class_color)
+          , fill = (col_data %>% dplyr::filter(crown_group_class==my_class))$crown_group_class_color
           , lwd = NA
+      ) +
+      geom_sf_label(data = rx_fire, aes(label = unit)
+        , label.size = NA
+        , alpha = 0
+        , size = 2
       ) +
       labs(
         title = my_title
-        , subtitle = my_subtitle
+        , subtitle = "Spatial Arrangement on BHEF"
+        , caption = my_caption
       ) +
       xlab("") +
       ylab("") +
@@ -407,58 +418,44 @@ my_class <- sort(unique(crowns_group$crown_group_class))[1]
         , axis.text = element_text(size = 8)
         , panel.border = element_blank()
         , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
-        , plot.subtitle = element_text(size=8, face="italic", color="gray20", margin = margin(0,0,0,0))
+        , plot.subtitle = element_text(size=10, color="gray20", margin = margin(0,0,0,0))
+        , plot.caption = element_text(size=10, face="bold.italic")
       )
     
   )
-
-# function to create line graph of temp by year for each site
-my_full_area_map <- function(my_data, my_year){
-  #generate title
-  my_title <- paste0(as.character(my_year), " Average Temperature by Month")
-  #plot
-  (
-  ggplot(my_data %>% filter(year==my_year), aes(x = (month), y = mean_temp, color = site)) +
-    geom_line(alpha=0.8, size = 1.3) + 
-    geom_point(alpha=0.8, size = 1.3) + 
-    scale_x_discrete(limits=month.abb) +
-    labs(
-        title = my_title
-        , subtitle = "Swamp Angel Study Plot and Senator Beck Study Plot"
-      ) +
-    ylab("Mean Temp. (K)") +
-    xlab("") +
-    scale_color_brewer(palette = "Dark2") +
-    theme_bw() +
-    theme(
-      legend.position="bottom"
-      , legend.box = "horizontal"
-      , axis.text.x = element_text(size = 11)
-    )
-  )
 }
 
-# plot with loop to create a plot for each year
-my_years <- c(2005:2010)
-for (i in 1:length(my_years)) {
-  print( my_full_area_map(metoc_site_year_mo, my_years[i]) )
+# plot with loop to create a plot for each class
+my_classes <- sort(unique(crowns_group$crown_group_class))
+# for (i in 1:length(my_classes)) {
+for (i in 1:3) {
+  print( 
+    my_full_area_map(
+      my_data = crowns_group %>% sf::st_intersection(bhef_boundary)
+      , my_class = my_classes[i]
+    ) 
+  )
 }
 ```
 
+## Rx Fire Unit Summary
 
-## Spatial Area by Crown Group Class
-
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+#########################################
+#########################################
+# map of unit w/ canopy
+#########################################
+#########################################
 ggplot() +
   stars::geom_stars(data = naip_rgb[
-    rx_fire %>% dplyr::slice(3) %>% 
+    rx_fire %>% dplyr::slice(16) %>% 
     sf::st_buffer(dist = 50) %>% 
     sf::st_transform(crs = sf::st_crs(naip_st)) %>% 
     sf::st_bbox()
   ]) +
   scale_fill_identity() + # !!! don't take this out or RGB plot will kill your computer
   geom_sf(data = rx_fire %>%
-          dplyr::slice(3) %>%
+          dplyr::slice(16) %>%
           sf::st_transform(crs = sf::st_crs(naip_st))
       , alpha = 0
       , lwd = 1.5
@@ -466,13 +463,26 @@ ggplot() +
   ) +
   geom_sf(data = crowns_group %>%
             sf::st_crop(
-              rx_fire %>% dplyr::slice(3) %>%
+              rx_fire %>% dplyr::slice(16) %>%
               sf::st_buffer(dist = 50) %>%
               sf::st_bbox()
             ) %>%
             sf::st_transform(crs = sf::st_crs(naip_st))
       , lwd = NA
       , aes(fill = crown_group_class_color)
+  ) +
+  geom_sf(data = harvests_post_lidar %>%
+            sf::st_union() %>% 
+            sf::st_crop(
+              rx_fire %>% dplyr::slice(16) %>%
+              sf::st_buffer(dist = 50) %>%
+              sf::st_bbox()
+            ) %>%
+            sf::st_transform(crs = sf::st_crs(naip_st))
+      , color = "blue"
+      , lwd = 1.5
+      , fill = "black"
+      , alpha = 0.4
   ) +
   xlab("") +
   ylab("") +
@@ -491,50 +501,7 @@ ggplot() +
 
 
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# summarize mean temp by year, month, site
-metoc_site_year_mo <- metoc_hourly_full %>% 
-  group_by(site, year, month) %>% 
-  summarise(mean_temp = mean(air.temp..K., na.rm = TRUE)
-            , cnt = n()) %>% 
-  arrange(site, year, month)
-
-# function to create line graph of temp by year for each site
-my_line_graph_month <- function(my_data, my_year){
-  #generate title
-  my_title <- paste0(as.character(my_year), " Average Temperature by Month")
-  #plot
-  (
-  ggplot(my_data %>% filter(year==my_year), aes(x = (month), y = mean_temp, color = site)) +
-    geom_line(alpha=0.8, size = 1.3) + 
-    geom_point(alpha=0.8, size = 1.3) + 
-    scale_x_discrete(limits=month.abb) +
-    labs(
-        title = my_title
-        , subtitle = "Swamp Angel Study Plot and Senator Beck Study Plot"
-      ) +
-    ylab("Mean Temp. (K)") +
-    xlab("") +
-    scale_color_brewer(palette = "Dark2") +
-    theme_bw() +
-    theme(
-      legend.position="bottom"
-      , legend.box = "horizontal"
-      , axis.text.x = element_text(size = 11)
-    )
-  )
-}
-
-# plot with loop to create a plot for each year
-my_years <- c(2005:2010)
-for (i in 1:length(my_years)) {
-  print( my_line_graph_month(metoc_site_year_mo, my_years[i]) )
-}
-```
-
-
-
-```{r, warning=F, message=F, fig.width = 18, fig.height = 8}
+```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE, results='hide'}
 # table
 kable(crowns_group %>% sf::st_set_geometry(NULL) %>% 
         dplyr::group_by(
