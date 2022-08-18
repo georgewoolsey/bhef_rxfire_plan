@@ -50,24 +50,58 @@ rx_fire <- sf::st_read("../data/rx_fire.gpkg")
 crowns_group <- sf::st_read("../data/crowns_group.gpkg")
 # tree_tops <- sf::st_read("../data/tree_tops.gpkg")
 # chm <- stars::read_stars("../data/chm.tif")
-
-# add colors to the crowns group
-col_data <- data.frame(
-  crown_group_class = sort(unique(crowns_group$crown_group_class))
-  , crown_group_class_color = viridis::turbo(n = length(unique(crowns_group$crown_group_class)), alpha = 0.5)
-)
-crowns_group <- crowns_group %>% 
-  # dplyr::select(-crown_group_class_color) %>% 
-  dplyr::left_join(col_data, by = c("crown_group_class"="crown_group_class"))
+# elevation
+bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
 ```
 
+### Data Preparation
 
-## Read NAIP Data
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
+
+################################################
+################################################
+# add colors to the crowns group
+################################################
+################################################
+  col_data <- data.frame(
+    crown_group_class = sort(unique(crowns_group$crown_group_class))
+    , crown_group_class_color = viridis::turbo(n = length(unique(crowns_group$crown_group_class)), alpha = 0.5)
+  )
+  crowns_group <- crowns_group %>% 
+    # dplyr::select(-crown_group_class_color) %>% 
+    dplyr::left_join(col_data, by = c("crown_group_class"="crown_group_class"))
+
+################################################
+################################################
+# create contour data
+################################################
+################################################
+# sequence by 5's to get 5m breaks list for contour
+seq_brk <- seq(0, 40000, 5)
+# create contour data
+bhef_contour <- bhef_elev %>% 
+  stars::st_contour(
+    na.rm = TRUE
+    , contour_lines = FALSE
+    , breaks = # classInt::classIntervals(na.omit(as.vector(x[[1]])))$brks
+        seq_brk[
+          seq_brk > min(na.omit(as.vector(bhef_elev[[1]]))) - 5 
+          & seq_brk < max(na.omit(as.vector(bhef_elev[[1]]))) + 5
+        ]
+  )
+
+```
+
+### Read NAIP Data
 
 [National Agriculture Imagery Program (NAIP)](https://naip-usdaonline.hub.arcgis.com/) imagery for the BHEF was *manually* ;/ downloaded from the [USGS Science Data Explorer](https://ers.cr.usgs.gov/). 
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
-# load with stars
+################################################
+################################################
+# load naip tif with stars
+################################################
+################################################
 naip_st <- stars::read_stars("../data/naip/bhef_naip_20200809_1m.tif") 
 
 # crop
@@ -105,7 +139,7 @@ ggplot() +
       , aes(fill = treatment_type_grp)
       , lwd = 0
     ) +
-  geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
+  geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
   geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
   geom_sf_label(data = rx_fire, aes(label = unit)
     , label.size = NA
@@ -286,7 +320,7 @@ ggplot(data = crowns_group_area_sum) +
   ) +
   labs(
       title = "BHEF Area (ha) by Crown Group Class"
-      # , subtitle = "within BHEF boundary and bounding box of research plot area"
+      , subtitle = "*Note: a tree is classified as cover >= 2m tall in 2017 based on lidar acquisition"
     ) +
   xlab("Area (ha)") +
   ylab("") +
@@ -296,6 +330,7 @@ ggplot(data = crowns_group_area_sum) +
   theme(
     legend.position = "none"
     , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , plot.subtitle = element_text(size=8, face="italic", color="gray20", margin = margin(0,0,0,0))
     , axis.text.y = element_text(size = 10, face = "bold")
   )
 
@@ -353,7 +388,7 @@ ggplot(data = crowns_group_area_sum_woharv) +
   ) +
   labs(
       title = "No Harvest Post-Lidar BHEF Area (ha) by Crown Group Class"
-      # , subtitle = "within BHEF boundary and bounding box of research plot area"
+      , subtitle = "*Note: a tree is classified as cover >= 2m tall in 2017 based on lidar acquisition"
     ) +
   xlab("Area (ha)") +
   ylab("") +
@@ -363,6 +398,7 @@ ggplot(data = crowns_group_area_sum_woharv) +
   theme(
     legend.position = "none"
     , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , plot.subtitle = element_text(size=8, face="italic", color="gray20", margin = margin(0,0,0,0))
     , axis.text.y = element_text(size = 10, face = "bold")
   )
 ```
@@ -389,7 +425,7 @@ my_full_area_map <- function(my_data, my_class){
   #plot
   (
   ggplot() +
-      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black") +
+      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
       geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
       geom_sf(data = my_data %>% 
                 dplyr::filter(crown_group_class==my_class)
@@ -439,6 +475,142 @@ for (i in 1:3) {
 ```
 
 ## Rx Fire Unit Summary
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# summarize area by coverage type
+temp_rx_crown <- rx_fire %>% 
+  dplyr::select(unit) %>% 
+  sf::st_difference(
+    sf::st_union(harvests_post_lidar %>% dplyr::select(nffid))
+  ) %>%
+  sf::st_intersection(
+    crowns_group %>% dplyr::select(crown_group_class)
+  ) %>% 
+  dplyr::mutate(area_m2 = as.numeric(sf::st_area(.))) %>% 
+  sf::st_set_geometry(NULL) %>% 
+  dplyr::group_by(unit, crown_group_class) %>% 
+  dplyr::summarise(area_m2 = sum(area_m2)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(unit, crown_group_class, area_m2)
+# join to base rx fire data
+rx_crown_sum <- rx_fire %>% 
+  sf::st_set_geometry(NULL) %>% 
+  dplyr::select(unit, postlidar_harvest_area_m2) %>% 
+  dplyr::rename(area_m2 = postlidar_harvest_area_m2) %>% 
+  dplyr::mutate(crown_group_class = "Post-Lidar Harvest") %>% 
+  dplyr::relocate(names(temp_rx_crown)) %>% 
+  dplyr::bind_rows(temp_rx_crown) %>% 
+  dplyr::left_join(
+    rx_fire %>% 
+      sf::st_set_geometry(NULL) %>% 
+      dplyr::select(unit, area_m2) %>% 
+      dplyr::rename(total_area_m2 = area_m2)
+    , by = c("unit" = "unit")
+  )
+# find non-tree cover
+rx_crown_sum <- rx_crown_sum %>% 
+  dplyr::bind_rows(
+    # find left over area
+    rx_crown_sum %>% 
+      dplyr::group_by(unit) %>% 
+      dplyr::summarise(cov_area_m2 = sum(area_m2), total_area_m2 = max(total_area_m2)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::mutate(
+        area_m2 = total_area_m2 - cov_area_m2
+        , crown_group_class = "Non-Tree Cover"
+      ) %>% 
+      dplyr::select(names(rx_crown_sum)) %>% 
+      dplyr::relocate(names(rx_crown_sum))
+  ) %>% 
+  dplyr::mutate(
+    pct_area = area_m2/total_area_m2
+    , area_ha = area_m2/10000
+  ) %>% 
+  dplyr::arrange(unit, crown_group_class)
+
+rx_crown_sum %>% 
+  dplyr::mutate(
+    cover = dplyr::case_when(
+      crown_group_class %in% c("Non-Tree Cover", "Post-Lidar Harvest") ~ crown_group_class
+      , startsWith(crown_group_class, "Continuous") ~ "Continuous Tree Cover"
+      , TRUE ~ "Sm/Med Grp. & Indiv. Tree Cover"
+    )
+    , cover_num = dplyr::case_when(
+      crown_group_class == "Non-Tree Cover" ~ 4
+      , crown_group_class == "Post-Lidar Harvest" ~ 3
+      , startsWith(crown_group_class, "Continuous") ~ 1
+      , TRUE ~ 2
+    )
+  ) %>% 
+  dplyr::group_by(unit, cover, cover_num) %>% 
+  dplyr::summarise(
+    pct_area = sum(pct_area)
+    , area_m2 = sum(area_m2)
+    , total_area_ha = max(total_area_m2)/10000
+  ) %>% 
+  dplyr::ungroup() %>% 
+# plot
+ggplot() + 
+  geom_col(aes(
+      y = reorder(unit, total_area_ha)
+      , x = pct_area
+      , fill = reorder(cover, -cover_num)
+    )
+    , width = 0.7
+  ) +
+  scale_fill_viridis_d(option = "cividis", alpha = 1, direction = -1) +
+  geom_text(
+    aes(
+      y = reorder(unit, total_area_ha)
+      , x = pct_area
+      , label = scales::percent(
+          ifelse(pct_area < 0.05, NA, pct_area)
+        , accuracy = 1)
+      , group = reorder(cover, -cover_num)
+    )
+    , position = position_stack(vjust = 0.5)
+    , color = "white"
+    , size = 3
+    , fontface = "bold"
+    # , hjust = -0.1
+    # , vjust = 0.1
+  ) +
+  geom_text(
+    aes(
+      y = reorder(unit, total_area_ha)
+      , x = 1.06
+      , label = paste0(scales::comma(
+            total_area_ha
+          , accuracy = 1)
+        , " ha"
+      )
+    )
+    , color = "black"
+    , size = 4
+    , fontface = "bold"
+  ) +
+  labs(
+      title = "Cover Classification of Rx Fire Unit Area"
+      , subtitle = "*Note: a tree is classified as cover >= 2m tall in 2017 based on lidar acquisition"
+    ) +
+  xlab("% of Area") +
+  ylab("Rx Fire Unit") +
+  scale_x_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , plot.subtitle = element_text(size=8, face="italic", color="gray20", margin = margin(0,0,0,0))
+    , axis.text.y = element_text(size = 10, face = "bold")
+    , legend.title = element_blank()
+  )
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(temp_rx_crown)
+gc()
+```
+
+### Rx Fire Unit Cover Map
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 #########################################
@@ -499,6 +671,61 @@ ggplot() +
 
 ```
 
+## Rx Fire Unit Contour
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+#########################################
+#########################################
+# map of unit w/ contour
+#########################################
+#########################################
+# plot
+ggplot() +
+  stars::geom_stars(data = bhef_elev[
+    rx_fire %>% dplyr::slice(3) %>% 
+    sf::st_buffer(dist = 50) %>% 
+    sf::st_bbox()
+  ]) +
+  scale_fill_viridis_c(option = "viridis", alpha = 0.9, na.value = "transparent") +
+  geom_sf(data = bhef_contour %>% 
+    sf::st_crop(
+      rx_fire %>% dplyr::slice(3) %>% 
+      sf::st_buffer(dist = 50) %>% 
+      sf::st_bbox()
+    )
+    , alpha = 0
+    , lwd = 0.5
+    , color = "gray30"
+    , show.legend = FALSE
+  ) +
+  geom_sf(data = rx_fire %>%
+          dplyr::slice(3)
+      , alpha = 0
+      , lwd = 1.5
+      , color = "orangered"
+      , show.legend = FALSE
+  ) +
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom"
+    , legend.direction = "horizontal"
+    , legend.margin = margin(0,0,0,0)
+    , legend.box.margin = margin(-21,0,2,0)
+    , legend.text = element_text(size = 7)
+    , legend.title = element_text(size = 7)
+    , axis.text = element_text(size = 8)
+    , panel.border = element_blank()
+  ) +
+  guides(
+    fill = guide_legend(title="Elev. (m)")
+  )
+
+```
+
 
 
 ```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE, results='hide'}
@@ -542,5 +769,30 @@ add_header_above(c(" " = 2, "Mean" = 6)) %>%
 kable_material(c("striped", "hover")) %>%
 kable_styling(font_size = 9) %>% 
 column_spec(1, bold = TRUE, width = "1em")
+
+
+
+bhef_elev <- stars::read_stars("../data/dem/bhef_dem_1m_mosaic.tif")
+stars::write_stars(bhef_elev, "../data/bhef_elev.tif", append = FALSE)
+
+# plot
+ggplot() + stars::geom_stars(data = bhef_elev) +
+  scale_fill_viridis_c(option = "cividis", alpha = 0.9, na.value = "transparent") +
+  geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
+  
+  xlab("") +
+  ylab("") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 8)
+    # , panel.grid = element_blank()
+    , panel.border = element_blank()
+  ) +
+  guides(
+    fill = guide_legend(title="Elev. (m)")
+  )
+
 
 ```

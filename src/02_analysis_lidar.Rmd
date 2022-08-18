@@ -203,7 +203,8 @@ The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to ob
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # plot
 ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
-  scale_fill_viridis_c(option = "cividis", alpha = 0.9, na.value = "transparent") +
+  scale_fill_viridis_c(option = "viridis", alpha = 0.9, na.value = "transparent") +
+  geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
   labs(
       title = "BHEF Elevation Map"
       , subtitle = sf::st_crs(bhef_elev)$input
