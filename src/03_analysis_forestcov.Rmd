@@ -57,16 +57,27 @@ bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
 ### Data Preparation
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6, results='hide'}
-
 ################################################
 ################################################
 # add colors to the crowns group
 ################################################
 ################################################
+  all_classes <- c(sort(unique(crowns_group$crown_group_class)), "Non-Tree Cover", "Post-Lidar Harvest")
   col_data <- data.frame(
-    crown_group_class = sort(unique(crowns_group$crown_group_class))
-    , crown_group_class_color = viridis::turbo(n = length(unique(crowns_group$crown_group_class)), alpha = 0.5)
-  )
+    crown_group_class = all_classes
+    , crown_group_class_color = c(
+        viridis::turbo(n = length(unique(crowns_group$crown_group_class)), alpha = 0.5)
+        , "#48526B80"
+        , "#9E967780"
+    )
+  ) %>% 
+  dplyr::mutate(row_n = dplyr::row_number())
+  # set up for plotting
+  col_data$crown_group_class <- factor(col_data$crown_group_class, levels=unique(col_data$crown_group_class))
+  scale_fill_manual_values_fill <- col_data$crown_group_class_color
+  names(scale_fill_manual_values_fill) <- paste(col_data$crown_group_class)
+
+  # attach 
   crowns_group <- crowns_group %>% 
     # dplyr::select(-crown_group_class_color) %>% 
     dplyr::left_join(col_data, by = c("crown_group_class"="crown_group_class"))
@@ -526,8 +537,10 @@ rx_crown_sum <- rx_crown_sum %>%
     pct_area = area_m2/total_area_m2
     , area_ha = area_m2/10000
   ) %>% 
-  dplyr::arrange(unit, crown_group_class)
+  dplyr::arrange(unit, crown_group_class) %>% 
+  dplyr::left_join(col_data, by = c("crown_group_class" = "crown_group_class"))
 
+# summarize for plot
 rx_crown_sum %>% 
   dplyr::mutate(
     cover = dplyr::case_when(
@@ -610,6 +623,49 @@ remove(temp_rx_crown)
 gc()
 ```
 
+### Rx Fire Unit Cover Class
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+# plot
+ggplot(data = rx_crown_sum %>% dplyr::filter(unit == (rx_fire %>% dplyr::slice(3))$unit)) + 
+  geom_col(aes(y = crown_group_class, x = area_ha, fill = crown_group_class), width = 0.7) +
+  scale_fill_manual(values = scale_fill_manual_values_fill)
+  geom_text(
+    aes(y = crown_group_class, x = area_ha + 2, label = scales::comma(area_ha, accuracy = 1))
+    , color = "black"
+    , size = 4
+    , fontface = "bold"
+    # , position = position_dodge(0.9)
+    , hjust = -0.1
+    , vjust = -0.5
+  ) +
+  geom_text(
+    aes(y = reorder(crown_group_class, area_ha), x = area_ha + 2, label = scales::percent(pct_area, accuracy = 1))
+    , color = "black"
+    , size = 3
+    # , position = position_dodge(0.9)
+    , hjust = -0.1
+    , vjust = 0.5
+  ) +
+  labs(
+      title = "BHEF Area (ha) by Crown Group Class"
+      , subtitle = "*Note: a tree is classified as cover >= 2m tall in 2017 based on lidar acquisition"
+    ) +
+  xlab("Area (ha)") +
+  ylab("") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_fill_viridis_c(alpha = 0.7, option = "cividis", direction = -1) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+    , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+    , plot.subtitle = element_text(size=8, face="italic", color="gray20", margin = margin(0,0,0,0))
+    , axis.text.y = element_text(size = 10, face = "bold")
+  )
+
+```
+
+
 ### Rx Fire Unit Cover Map
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
@@ -620,14 +676,14 @@ gc()
 #########################################
 ggplot() +
   stars::geom_stars(data = naip_rgb[
-    rx_fire %>% dplyr::slice(16) %>% 
+    rx_fire %>% dplyr::slice(3) %>% 
     sf::st_buffer(dist = 50) %>% 
     sf::st_transform(crs = sf::st_crs(naip_st)) %>% 
     sf::st_bbox()
   ]) +
   scale_fill_identity() + # !!! don't take this out or RGB plot will kill your computer
   geom_sf(data = rx_fire %>%
-          dplyr::slice(16) %>%
+          dplyr::slice(3) %>%
           sf::st_transform(crs = sf::st_crs(naip_st))
       , alpha = 0
       , lwd = 1.5
@@ -635,7 +691,7 @@ ggplot() +
   ) +
   geom_sf(data = crowns_group %>%
             sf::st_crop(
-              rx_fire %>% dplyr::slice(16) %>%
+              rx_fire %>% dplyr::slice(3) %>%
               sf::st_buffer(dist = 50) %>%
               sf::st_bbox()
             ) %>%
@@ -646,7 +702,7 @@ ggplot() +
   geom_sf(data = harvests_post_lidar %>%
             sf::st_union() %>% 
             sf::st_crop(
-              rx_fire %>% dplyr::slice(16) %>%
+              rx_fire %>% dplyr::slice(3) %>%
               sf::st_buffer(dist = 50) %>%
               sf::st_bbox()
             ) %>%
@@ -729,6 +785,26 @@ ggplot() +
 
 
 ```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE, results='hide'}
+# plot
+  ggplot(col_data) +
+    geom_col(
+      aes(
+        x = row_n
+        , y = 1
+        , fill = crown_group_class
+      )
+    ) +
+    scale_fill_manual(values = scale_fill_manual_values_fill) +
+    geom_text(
+      aes(
+        x = row_n
+        , y = 0.5
+        , label = crown_group_class
+      )
+      , angle = 90
+    ) +
+    theme_nothing()
+
 # table
 kable(crowns_group %>% sf::st_set_geometry(NULL) %>% 
         dplyr::group_by(

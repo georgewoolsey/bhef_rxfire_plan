@@ -23,7 +23,7 @@
 <meta name="author" content="George Woolsey" />
 
 
-<meta name="date" content="2022-08-16" />
+<meta name="date" content="2022-08-18" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -52,8 +52,6 @@
 <link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
 <link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
 <script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
-<script src="libs/kePrint-0.0.1/kePrint.js"></script>
-<link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 
 
 <style type="text/css">
@@ -180,8 +178,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 <li><a href="cover_analysis.html#cover_analysis" id="toc-cover_analysis"><span class="toc-section-number">4</span> Forest Cover Analysis<span></span></a>
 <ul>
-<li><a href="cover_analysis.html#read-data" id="toc-read-data"><span class="toc-section-number">4.1</span> Read Data<span></span></a></li>
-<li><a href="cover_analysis.html#forest-cover-summary" id="toc-forest-cover-summary"><span class="toc-section-number">4.2</span> Forest Cover Summary<span></span></a></li>
+<li><a href="cover_analysis.html#read-data" id="toc-read-data"><span class="toc-section-number">4.1</span> Read Data<span></span></a>
+<ul>
+<li><a href="cover_analysis.html#data-preparation" id="toc-data-preparation"><span class="toc-section-number">4.1.1</span> Data Preparation<span></span></a></li>
+<li><a href="cover_analysis.html#read-naip-data" id="toc-read-naip-data"><span class="toc-section-number">4.1.2</span> Read NAIP Data<span></span></a></li>
+</ul></li>
+<li><a href="cover_analysis.html#post-lidar-acquisition-timber-harvests" id="toc-post-lidar-acquisition-timber-harvests"><span class="toc-section-number">4.2</span> Post-Lidar Acquisition Timber Harvests<span></span></a>
+<ul>
+<li><a href="cover_analysis.html#join-harvests-to-rx-fire-units" id="toc-join-harvests-to-rx-fire-units"><span class="toc-section-number">4.2.1</span> Join Harvests to Rx Fire Units<span></span></a></li>
+</ul></li>
+<li><a href="cover_analysis.html#forest-cover-summary" id="toc-forest-cover-summary"><span class="toc-section-number">4.3</span> Forest Cover Summary<span></span></a></li>
+<li><a href="cover_analysis.html#total-area-by-crown-group-class" id="toc-total-area-by-crown-group-class"><span class="toc-section-number">4.4</span> Total Area by Crown Group Class<span></span></a></li>
+<li><a href="cover_analysis.html#no-harvest-post-lidar-area-by-crown-group-class" id="toc-no-harvest-post-lidar-area-by-crown-group-class"><span class="toc-section-number">4.5</span> No Harvest Post-Lidar Area by Crown Group Class<span></span></a></li>
+<li><a href="cover_analysis.html#spatial-arrangement-by-crown-group-class" id="toc-spatial-arrangement-by-crown-group-class"><span class="toc-section-number">4.6</span> Spatial Arrangement by Crown Group Class<span></span></a></li>
+<li><a href="cover_analysis.html#rx-fire-unit-summary" id="toc-rx-fire-unit-summary"><span class="toc-section-number">4.7</span> Rx Fire Unit Summary<span></span></a>
+<ul>
+<li><a href="cover_analysis.html#rx-fire-unit-cover-map" id="toc-rx-fire-unit-cover-map"><span class="toc-section-number">4.7.1</span> Rx Fire Unit Cover Map<span></span></a></li>
+</ul></li>
+<li><a href="cover_analysis.html#rx-fire-unit-contour" id="toc-rx-fire-unit-contour"><span class="toc-section-number">4.8</span> Rx Fire Unit Contour<span></span></a></li>
 </ul></li>
 </ul>
 
@@ -209,21 +223,201 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">4.1</span> Read Data<a href="cover_analysis.html#read-data" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p><a href="vector_data.html#vector_data">Vector data</a> and <a href="lidar_data.html#lidar_data">forest cover data</a> created in prior chapters.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="cover_analysis.html#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># read</span></span>
-<span id="cb2-2"><a href="cover_analysis.html#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># forests_bhnf &lt;- sf::st_read(&quot;../data/forests_bhnf.gpkg&quot;)</span></span>
-<span id="cb2-3"><a href="cover_analysis.html#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># bhef_boundary &lt;- sf::st_read(&quot;../data/bhef_boundary.gpkg&quot;)</span></span>
-<span id="cb2-4"><a href="cover_analysis.html#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># bhef_harvests &lt;- sf::st_read(&quot;../data/bhef_harvests.gpkg&quot;)</span></span>
-<span id="cb2-5"><a href="cover_analysis.html#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># research_plots &lt;- sf::st_read(&quot;../data/research_plots.gpkg&quot;)</span></span>
-<span id="cb2-6"><a href="cover_analysis.html#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># stem_map &lt;- sf::st_read(&quot;../data/stem_map.gpkg&quot;)</span></span>
-<span id="cb2-7"><a href="cover_analysis.html#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># rx_fire &lt;- sf::st_read(&quot;../data/rx_fire.gpkg&quot;)</span></span>
+<span id="cb2-2"><a href="cover_analysis.html#cb2-2" aria-hidden="true" tabindex="-1"></a>forests_bhnf <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(<span class="st">&quot;../data/forests_bhnf.gpkg&quot;</span>)</span>
+<span id="cb2-3"><a href="cover_analysis.html#cb2-3" aria-hidden="true" tabindex="-1"></a>bhef_boundary <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(<span class="st">&quot;../data/bhef_boundary.gpkg&quot;</span>)</span>
+<span id="cb2-4"><a href="cover_analysis.html#cb2-4" aria-hidden="true" tabindex="-1"></a>bhef_harvests <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(<span class="st">&quot;../data/bhef_harvests.gpkg&quot;</span>)</span>
+<span id="cb2-5"><a href="cover_analysis.html#cb2-5" aria-hidden="true" tabindex="-1"></a>research_plots <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(<span class="st">&quot;../data/research_plots.gpkg&quot;</span>)</span>
+<span id="cb2-6"><a href="cover_analysis.html#cb2-6" aria-hidden="true" tabindex="-1"></a>stem_map <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(<span class="st">&quot;../data/stem_map.gpkg&quot;</span>)</span>
+<span id="cb2-7"><a href="cover_analysis.html#cb2-7" aria-hidden="true" tabindex="-1"></a>rx_fire <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(<span class="st">&quot;../data/rx_fire.gpkg&quot;</span>)</span>
 <span id="cb2-8"><a href="cover_analysis.html#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># # forest cov</span></span>
 <span id="cb2-9"><a href="cover_analysis.html#cb2-9" aria-hidden="true" tabindex="-1"></a>crowns_group <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(<span class="st">&quot;../data/crowns_group.gpkg&quot;</span>)</span>
 <span id="cb2-10"><a href="cover_analysis.html#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># tree_tops &lt;- sf::st_read(&quot;../data/tree_tops.gpkg&quot;)</span></span>
-<span id="cb2-11"><a href="cover_analysis.html#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># chm &lt;- stars::read_stars(&quot;../data/chm.tif&quot;)</span></span></code></pre></div>
+<span id="cb2-11"><a href="cover_analysis.html#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># chm &lt;- stars::read_stars(&quot;../data/chm.tif&quot;)</span></span>
+<span id="cb2-12"><a href="cover_analysis.html#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># elevation</span></span>
+<span id="cb2-13"><a href="cover_analysis.html#cb2-13" aria-hidden="true" tabindex="-1"></a>bhef_elev <span class="ot">&lt;-</span> stars<span class="sc">::</span><span class="fu">read_stars</span>(<span class="st">&quot;../data/bhef_elev.tif&quot;</span>)</span></code></pre></div>
+<div id="data-preparation" class="section level3 hasAnchor" number="4.1.1">
+<h3><span class="header-section-number">4.1.1</span> Data Preparation<a href="cover_analysis.html#data-preparation" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="cover_analysis.html#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-2"><a href="cover_analysis.html#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-3"><a href="cover_analysis.html#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># add colors to the crowns group</span></span>
+<span id="cb3-4"><a href="cover_analysis.html#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-5"><a href="cover_analysis.html#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-6"><a href="cover_analysis.html#cb3-6" aria-hidden="true" tabindex="-1"></a>  col_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb3-7"><a href="cover_analysis.html#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">crown_group_class =</span> <span class="fu">sort</span>(<span class="fu">unique</span>(crowns_group<span class="sc">$</span>crown_group_class))</span>
+<span id="cb3-8"><a href="cover_analysis.html#cb3-8" aria-hidden="true" tabindex="-1"></a>    , <span class="at">crown_group_class_color =</span> viridis<span class="sc">::</span><span class="fu">turbo</span>(<span class="at">n =</span> <span class="fu">length</span>(<span class="fu">unique</span>(crowns_group<span class="sc">$</span>crown_group_class)), <span class="at">alpha =</span> <span class="fl">0.5</span>)</span>
+<span id="cb3-9"><a href="cover_analysis.html#cb3-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb3-10"><a href="cover_analysis.html#cb3-10" aria-hidden="true" tabindex="-1"></a>  crowns_group <span class="ot">&lt;-</span> crowns_group <span class="sc">%&gt;%</span> </span>
+<span id="cb3-11"><a href="cover_analysis.html#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># dplyr::select(-crown_group_class_color) %&gt;% </span></span>
+<span id="cb3-12"><a href="cover_analysis.html#cb3-12" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">left_join</span>(col_data, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;crown_group_class&quot;</span><span class="ot">=</span><span class="st">&quot;crown_group_class&quot;</span>))</span>
+<span id="cb3-13"><a href="cover_analysis.html#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="cover_analysis.html#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-15"><a href="cover_analysis.html#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-16"><a href="cover_analysis.html#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># create contour data</span></span>
+<span id="cb3-17"><a href="cover_analysis.html#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-18"><a href="cover_analysis.html#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb3-19"><a href="cover_analysis.html#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># sequence by 5&#39;s to get 5m breaks list for contour</span></span>
+<span id="cb3-20"><a href="cover_analysis.html#cb3-20" aria-hidden="true" tabindex="-1"></a>seq_brk <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">40000</span>, <span class="dv">5</span>)</span>
+<span id="cb3-21"><a href="cover_analysis.html#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># create contour data</span></span>
+<span id="cb3-22"><a href="cover_analysis.html#cb3-22" aria-hidden="true" tabindex="-1"></a>bhef_contour <span class="ot">&lt;-</span> bhef_elev <span class="sc">%&gt;%</span> </span>
+<span id="cb3-23"><a href="cover_analysis.html#cb3-23" aria-hidden="true" tabindex="-1"></a>  stars<span class="sc">::</span><span class="fu">st_contour</span>(</span>
+<span id="cb3-24"><a href="cover_analysis.html#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">na.rm =</span> <span class="cn">TRUE</span></span>
+<span id="cb3-25"><a href="cover_analysis.html#cb3-25" aria-hidden="true" tabindex="-1"></a>    , <span class="at">contour_lines =</span> <span class="cn">FALSE</span></span>
+<span id="cb3-26"><a href="cover_analysis.html#cb3-26" aria-hidden="true" tabindex="-1"></a>    , <span class="at">breaks =</span> <span class="co"># classInt::classIntervals(na.omit(as.vector(x[[1]])))$brks</span></span>
+<span id="cb3-27"><a href="cover_analysis.html#cb3-27" aria-hidden="true" tabindex="-1"></a>        seq_brk[</span>
+<span id="cb3-28"><a href="cover_analysis.html#cb3-28" aria-hidden="true" tabindex="-1"></a>          seq_brk <span class="sc">&gt;</span> <span class="fu">min</span>(<span class="fu">na.omit</span>(<span class="fu">as.vector</span>(bhef_elev[[<span class="dv">1</span>]]))) <span class="sc">-</span> <span class="dv">5</span> </span>
+<span id="cb3-29"><a href="cover_analysis.html#cb3-29" aria-hidden="true" tabindex="-1"></a>          <span class="sc">&amp;</span> seq_brk <span class="sc">&lt;</span> <span class="fu">max</span>(<span class="fu">na.omit</span>(<span class="fu">as.vector</span>(bhef_elev[[<span class="dv">1</span>]]))) <span class="sc">+</span> <span class="dv">5</span></span>
+<span id="cb3-30"><a href="cover_analysis.html#cb3-30" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb3-31"><a href="cover_analysis.html#cb3-31" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
 </div>
-<div id="forest-cover-summary" class="section level2 hasAnchor" number="4.2">
-<h2><span class="header-section-number">4.2</span> Forest Cover Summary<a href="cover_analysis.html#forest-cover-summary" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div id="read-naip-data" class="section level3 hasAnchor" number="4.1.2">
+<h3><span class="header-section-number">4.1.2</span> Read NAIP Data<a href="cover_analysis.html#read-naip-data" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p><a href="https://naip-usdaonline.hub.arcgis.com/">National Agriculture Imagery Program (NAIP)</a> imagery for the BHEF was <em>manually</em> ;/ downloaded from the <a href="https://ers.cr.usgs.gov/">USGS Science Data Explorer</a>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="cover_analysis.html#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb4-2"><a href="cover_analysis.html#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb4-3"><a href="cover_analysis.html#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># load naip tif with stars</span></span>
+<span id="cb4-4"><a href="cover_analysis.html#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb4-5"><a href="cover_analysis.html#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="do">################################################</span></span>
+<span id="cb4-6"><a href="cover_analysis.html#cb4-6" aria-hidden="true" tabindex="-1"></a>naip_st <span class="ot">&lt;-</span> stars<span class="sc">::</span><span class="fu">read_stars</span>(<span class="st">&quot;../data/naip/bhef_naip_20200809_1m.tif&quot;</span>) </span>
+<span id="cb4-7"><a href="cover_analysis.html#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="cover_analysis.html#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># crop</span></span>
+<span id="cb4-9"><a href="cover_analysis.html#cb4-9" aria-hidden="true" tabindex="-1"></a>naip_st <span class="ot">&lt;-</span> naip_st <span class="sc">%&gt;%</span> </span>
+<span id="cb4-10"><a href="cover_analysis.html#cb4-10" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_crop</span>(., sf<span class="sc">::</span><span class="fu">st_buffer</span>(sf<span class="sc">::</span><span class="fu">st_transform</span>(bhef_boundary, <span class="at">crs =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(naip_st)), <span class="at">dist =</span> <span class="dv">500</span>))</span>
+<span id="cb4-11"><a href="cover_analysis.html#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="cover_analysis.html#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(naip_st %&gt;% dplyr::slice(band, 1:3), axes = TRUE)</span></span>
+<span id="cb4-13"><a href="cover_analysis.html#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(naip_st[,,,3:1], axes = TRUE)</span></span>
+<span id="cb4-14"><a href="cover_analysis.html#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="cover_analysis.html#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co"># set rgb image</span></span>
+<span id="cb4-16"><a href="cover_analysis.html#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># band 3 = red, band 2 = green, band 1 = blue</span></span>
+<span id="cb4-17"><a href="cover_analysis.html#cb4-17" aria-hidden="true" tabindex="-1"></a>naip_rgb <span class="ot">&lt;-</span> stars<span class="sc">::</span><span class="fu">st_rgb</span>(</span>
+<span id="cb4-18"><a href="cover_analysis.html#cb4-18" aria-hidden="true" tabindex="-1"></a>  naip_st[,,,<span class="dv">3</span><span class="sc">:</span><span class="dv">1</span>]</span>
+<span id="cb4-19"><a href="cover_analysis.html#cb4-19" aria-hidden="true" tabindex="-1"></a>  , <span class="at">dimension =</span> <span class="dv">3</span></span>
+<span id="cb4-20"><a href="cover_analysis.html#cb4-20" aria-hidden="true" tabindex="-1"></a>  , <span class="at">use_alpha =</span> <span class="cn">FALSE</span></span>
+<span id="cb4-21"><a href="cover_analysis.html#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># , stretch = &quot;histogram&quot;</span></span>
+<span id="cb4-22"><a href="cover_analysis.html#cb4-22" aria-hidden="true" tabindex="-1"></a>  , <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.005</span>, <span class="fl">0.995</span>)</span>
+<span id="cb4-23"><a href="cover_analysis.html#cb4-23" aria-hidden="true" tabindex="-1"></a>  , <span class="at">stretch =</span> <span class="st">&quot;percent&quot;</span></span>
+<span id="cb4-24"><a href="cover_analysis.html#cb4-24" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="post-lidar-acquisition-timber-harvests" class="section level2 hasAnchor" number="4.2">
+<h2><span class="header-section-number">4.2</span> Post-Lidar Acquisition Timber Harvests<a href="cover_analysis.html#post-lidar-acquisition-timber-harvests" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Lidar data was collected in 2017. Spatially identify areas within BHEF where timber harvest (not including TSI) treatments occurred in 2017 or later.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="cover_analysis.html#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># find harvests after lidar collection</span></span>
+<span id="cb5-2"><a href="cover_analysis.html#cb5-2" aria-hidden="true" tabindex="-1"></a>harvests_post_lidar <span class="ot">&lt;-</span> bhef_harvests <span class="sc">%&gt;%</span> </span>
+<span id="cb5-3"><a href="cover_analysis.html#cb5-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(year_id <span class="sc">&gt;=</span> <span class="dv">2017</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-4"><a href="cover_analysis.html#cb5-4" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_intersection</span>(bhef_boundary)</span>
+<span id="cb5-5"><a href="cover_analysis.html#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="cover_analysis.html#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb5-7"><a href="cover_analysis.html#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb5-8"><a href="cover_analysis.html#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> harvests_post_lidar</span>
+<span id="cb5-9"><a href="cover_analysis.html#cb5-9" aria-hidden="true" tabindex="-1"></a>      , <span class="fu">aes</span>(<span class="at">fill =</span> treatment_type_grp)</span>
+<span id="cb5-10"><a href="cover_analysis.html#cb5-10" aria-hidden="true" tabindex="-1"></a>      , <span class="at">lwd =</span> <span class="dv">0</span></span>
+<span id="cb5-11"><a href="cover_analysis.html#cb5-11" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb5-12"><a href="cover_analysis.html#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> bhef_boundary, <span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">lwd =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">&quot;black&quot;</span>, <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>) <span class="sc">+</span></span>
+<span id="cb5-13"><a href="cover_analysis.html#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> rx_fire, <span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">lwd =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">&quot;orangered&quot;</span>) <span class="sc">+</span></span>
+<span id="cb5-14"><a href="cover_analysis.html#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf_label</span>(<span class="at">data =</span> rx_fire, <span class="fu">aes</span>(<span class="at">label =</span> unit)</span>
+<span id="cb5-15"><a href="cover_analysis.html#cb5-15" aria-hidden="true" tabindex="-1"></a>    , <span class="at">label.size =</span> <span class="cn">NA</span></span>
+<span id="cb5-16"><a href="cover_analysis.html#cb5-16" aria-hidden="true" tabindex="-1"></a>    , <span class="at">alpha =</span> <span class="dv">0</span></span>
+<span id="cb5-17"><a href="cover_analysis.html#cb5-17" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">2</span></span>
+<span id="cb5-18"><a href="cover_analysis.html#cb5-18" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb5-19"><a href="cover_analysis.html#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf_label</span>(<span class="at">data =</span> harvests_post_lidar, <span class="fu">aes</span>(<span class="at">label =</span> year_id)</span>
+<span id="cb5-20"><a href="cover_analysis.html#cb5-20" aria-hidden="true" tabindex="-1"></a>    , <span class="at">label.size =</span> <span class="cn">NA</span></span>
+<span id="cb5-21"><a href="cover_analysis.html#cb5-21" aria-hidden="true" tabindex="-1"></a>    , <span class="at">alpha =</span> <span class="dv">0</span></span>
+<span id="cb5-22"><a href="cover_analysis.html#cb5-22" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="fl">2.5</span></span>
+<span id="cb5-23"><a href="cover_analysis.html#cb5-23" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb5-24"><a href="cover_analysis.html#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_d</span>(<span class="at">option =</span> <span class="st">&quot;viridis&quot;</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span> </span>
+<span id="cb5-25"><a href="cover_analysis.html#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb5-26"><a href="cover_analysis.html#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;BHEF Post-Lidar Acquisition Timber Harvests&quot;</span></span>
+<span id="cb5-27"><a href="cover_analysis.html#cb5-27" aria-hidden="true" tabindex="-1"></a>    , <span class="at">subtitle =</span> <span class="fu">paste0</span>(<span class="st">&quot;Rx fire units&quot;</span>)</span>
+<span id="cb5-28"><a href="cover_analysis.html#cb5-28" aria-hidden="true" tabindex="-1"></a>    , <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb5-29"><a href="cover_analysis.html#cb5-29" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*Percent of BHEF Area Harvested Post-Lidar: &quot;</span></span>
+<span id="cb5-30"><a href="cover_analysis.html#cb5-30" aria-hidden="true" tabindex="-1"></a>      , scales<span class="sc">::</span><span class="fu">percent</span>(</span>
+<span id="cb5-31"><a href="cover_analysis.html#cb5-31" aria-hidden="true" tabindex="-1"></a>        <span class="fu">as.numeric</span>(<span class="fu">sum</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(harvests_post_lidar))) <span class="sc">/</span> <span class="fu">as.numeric</span>(<span class="fu">sum</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(bhef_boundary)))</span>
+<span id="cb5-32"><a href="cover_analysis.html#cb5-32" aria-hidden="true" tabindex="-1"></a>        , <span class="at">accuracy =</span> <span class="fl">0.1</span></span>
+<span id="cb5-33"><a href="cover_analysis.html#cb5-33" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb5-34"><a href="cover_analysis.html#cb5-34" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-35"><a href="cover_analysis.html#cb5-35" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb5-36"><a href="cover_analysis.html#cb5-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb5-37"><a href="cover_analysis.html#cb5-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb5-38"><a href="cover_analysis.html#cb5-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb5-39"><a href="cover_analysis.html#cb5-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb5-40"><a href="cover_analysis.html#cb5-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb5-41"><a href="cover_analysis.html#cb5-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb5-42"><a href="cover_analysis.html#cb5-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span></span>
+<span id="cb5-43"><a href="cover_analysis.html#cb5-43" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.title =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb5-44"><a href="cover_analysis.html#cb5-44" aria-hidden="true" tabindex="-1"></a>    , <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>)</span>
+<span id="cb5-45"><a href="cover_analysis.html#cb5-45" aria-hidden="true" tabindex="-1"></a>    , <span class="at">panel.border =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb5-46"><a href="cover_analysis.html#cb5-46" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">0</span>))</span>
+<span id="cb5-47"><a href="cover_analysis.html#cb5-47" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">8</span>, <span class="at">face=</span><span class="st">&quot;italic&quot;</span>, <span class="at">color=</span><span class="st">&quot;orangered&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span>
+<span id="cb5-48"><a href="cover_analysis.html#cb5-48" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">10</span>, <span class="at">face=</span><span class="st">&quot;bold.italic&quot;</span>)</span>
+<span id="cb5-49"><a href="cover_analysis.html#cb5-49" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-6-1.png" width="960" /></p>
+<p>There have been <strong>181 hectares</strong> in BHEF with timber harvest treatments completed after the lidar acquisition in 2017. This represents <strong>13.2%</strong> of the total BHEF area (<strong>1,378 hectares</strong>).</p>
+<div id="join-harvests-to-rx-fire-units" class="section level3 hasAnchor" number="4.2.1">
+<h3><span class="header-section-number">4.2.1</span> Join Harvests to Rx Fire Units<a href="cover_analysis.html#join-harvests-to-rx-fire-units" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="cover_analysis.html#cb6-1" aria-hidden="true" tabindex="-1"></a>rx_fire <span class="ot">&lt;-</span> rx_fire <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="cover_analysis.html#cb6-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(</span>
+<span id="cb6-3"><a href="cover_analysis.html#cb6-3" aria-hidden="true" tabindex="-1"></a>    rx_fire <span class="sc">%&gt;%</span> </span>
+<span id="cb6-4"><a href="cover_analysis.html#cb6-4" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">select</span>(unit) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-5"><a href="cover_analysis.html#cb6-5" aria-hidden="true" tabindex="-1"></a>      sf<span class="sc">::</span><span class="fu">st_intersection</span>(</span>
+<span id="cb6-6"><a href="cover_analysis.html#cb6-6" aria-hidden="true" tabindex="-1"></a>        sf<span class="sc">::</span><span class="fu">st_union</span>(harvests_post_lidar <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(nffid))</span>
+<span id="cb6-7"><a href="cover_analysis.html#cb6-7" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-8"><a href="cover_analysis.html#cb6-8" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">postlidar_harvest_area_m2 =</span> <span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(.))) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-9"><a href="cover_analysis.html#cb6-9" aria-hidden="true" tabindex="-1"></a>      sf<span class="sc">::</span><span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-10"><a href="cover_analysis.html#cb6-10" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">group_by</span>(unit) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-11"><a href="cover_analysis.html#cb6-11" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">postlidar_harvest_area_m2 =</span> <span class="fu">sum</span>(postlidar_harvest_area_m2)) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-12"><a href="cover_analysis.html#cb6-12" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb6-13"><a href="cover_analysis.html#cb6-13" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">select</span>(unit, postlidar_harvest_area_m2)</span>
+<span id="cb6-14"><a href="cover_analysis.html#cb6-14" aria-hidden="true" tabindex="-1"></a>    , <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;unit&quot;</span> <span class="ot">=</span> <span class="st">&quot;unit&quot;</span>)</span>
+<span id="cb6-15"><a href="cover_analysis.html#cb6-15" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-16"><a href="cover_analysis.html#cb6-16" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb6-17"><a href="cover_analysis.html#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">has_postlidar_harvest =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(postlidar_harvest_area_m2), <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb6-18"><a href="cover_analysis.html#cb6-18" aria-hidden="true" tabindex="-1"></a>    , <span class="at">postlidar_harvest_area_m2 =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(postlidar_harvest_area_m2), postlidar_harvest_area_m2, <span class="dv">0</span>)</span>
+<span id="cb6-19"><a href="cover_analysis.html#cb6-19" aria-hidden="true" tabindex="-1"></a>    , <span class="at">postlidar_harvest_area_ha =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(postlidar_harvest_area_m2), postlidar_harvest_area_m2<span class="sc">/</span><span class="dv">10000</span>, <span class="dv">0</span>)</span>
+<span id="cb6-20"><a href="cover_analysis.html#cb6-20" aria-hidden="true" tabindex="-1"></a>    , <span class="at">area_m2 =</span> <span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(.))</span>
+<span id="cb6-21"><a href="cover_analysis.html#cb6-21" aria-hidden="true" tabindex="-1"></a>    , <span class="at">area_ha =</span> <span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(.)) <span class="sc">/</span> <span class="dv">10000</span></span>
+<span id="cb6-22"><a href="cover_analysis.html#cb6-22" aria-hidden="true" tabindex="-1"></a>    , <span class="at">pct_postlidar_harvest_area =</span> postlidar_harvest_area_m2 <span class="sc">/</span> area_m2</span>
+<span id="cb6-23"><a href="cover_analysis.html#cb6-23" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb6-24"><a href="cover_analysis.html#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="cover_analysis.html#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="cover_analysis.html#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb6-27"><a href="cover_analysis.html#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> rx_fire) <span class="sc">+</span> </span>
+<span id="cb6-28"><a href="cover_analysis.html#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(unit, pct_postlidar_harvest_area), <span class="at">x =</span> area_ha)</span>
+<span id="cb6-29"><a href="cover_analysis.html#cb6-29" aria-hidden="true" tabindex="-1"></a>           , <span class="at">width =</span> <span class="fl">0.7</span>, <span class="at">fill =</span> <span class="st">&quot;navy&quot;</span>, <span class="at">alpha =</span> <span class="fl">0.5</span></span>
+<span id="cb6-30"><a href="cover_analysis.html#cb6-30" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb6-31"><a href="cover_analysis.html#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(unit, pct_postlidar_harvest_area), <span class="at">x =</span> postlidar_harvest_area_ha)</span>
+<span id="cb6-32"><a href="cover_analysis.html#cb6-32" aria-hidden="true" tabindex="-1"></a>           , <span class="at">width =</span> <span class="fl">0.7</span>, <span class="at">fill =</span> <span class="st">&quot;navy&quot;</span>, <span class="at">alpha =</span> <span class="fl">0.9</span></span>
+<span id="cb6-33"><a href="cover_analysis.html#cb6-33" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb6-34"><a href="cover_analysis.html#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb6-35"><a href="cover_analysis.html#cb6-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(unit, pct_postlidar_harvest_area)</span>
+<span id="cb6-36"><a href="cover_analysis.html#cb6-36" aria-hidden="true" tabindex="-1"></a>        , <span class="at">x =</span> <span class="dv">0</span></span>
+<span id="cb6-37"><a href="cover_analysis.html#cb6-37" aria-hidden="true" tabindex="-1"></a>        , <span class="at">label =</span> scales<span class="sc">::</span><span class="fu">percent</span>(pct_postlidar_harvest_area, <span class="at">accuracy =</span> <span class="dv">1</span>)</span>
+<span id="cb6-38"><a href="cover_analysis.html#cb6-38" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb6-39"><a href="cover_analysis.html#cb6-39" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;white&quot;</span></span>
+<span id="cb6-40"><a href="cover_analysis.html#cb6-40" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">3</span></span>
+<span id="cb6-41"><a href="cover_analysis.html#cb6-41" aria-hidden="true" tabindex="-1"></a>    , <span class="at">fontface =</span> <span class="st">&quot;bold&quot;</span></span>
+<span id="cb6-42"><a href="cover_analysis.html#cb6-42" aria-hidden="true" tabindex="-1"></a>    , <span class="at">hjust =</span> <span class="sc">-</span><span class="fl">0.1</span></span>
+<span id="cb6-43"><a href="cover_analysis.html#cb6-43" aria-hidden="true" tabindex="-1"></a>    , <span class="at">vjust =</span> <span class="fl">0.1</span></span>
+<span id="cb6-44"><a href="cover_analysis.html#cb6-44" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb6-45"><a href="cover_analysis.html#cb6-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb6-46"><a href="cover_analysis.html#cb6-46" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="st">&quot;Percent of Rx Fire Unit Area with Timber Harvest Post-Lidar Acquisition&quot;</span></span>
+<span id="cb6-47"><a href="cover_analysis.html#cb6-47" aria-hidden="true" tabindex="-1"></a>      <span class="co"># , subtitle = &quot;within BHEF boundary and bounding box of research plot area&quot;</span></span>
+<span id="cb6-48"><a href="cover_analysis.html#cb6-48" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb6-49"><a href="cover_analysis.html#cb6-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;Area (ha)&quot;</span>) <span class="sc">+</span></span>
+<span id="cb6-50"><a href="cover_analysis.html#cb6-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;Rx Fire Unit&quot;</span>) <span class="sc">+</span></span>
+<span id="cb6-51"><a href="cover_analysis.html#cb6-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb6-52"><a href="cover_analysis.html#cb6-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb6-53"><a href="cover_analysis.html#cb6-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb6-54"><a href="cover_analysis.html#cb6-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&quot;none&quot;</span></span>
+<span id="cb6-55"><a href="cover_analysis.html#cb6-55" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">0</span>))</span>
+<span id="cb6-56"><a href="cover_analysis.html#cb6-56" aria-hidden="true" tabindex="-1"></a>    , <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>)</span>
+<span id="cb6-57"><a href="cover_analysis.html#cb6-57" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-7-1.png" width="960" /></p>
+</div>
+</div>
+<div id="forest-cover-summary" class="section level2 hasAnchor" number="4.3">
+<h2><span class="header-section-number">4.3</span> Forest Cover Summary<a href="cover_analysis.html#forest-cover-summary" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>In <a href="lidar_data.html#lidar_data">prior chapter</a>, interlocking tree crowns were grouped together to form distinct tree crown classes. Experimental Forest-wide summary statistics were shown <a href="lidar_data.html#cg_sum">here</a>. Explore the canopy cover distributions further.</p>
-<p>For reference, tree classes are based on <a href="https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/1365-2745.13764?casa_token=ob4t10qIRrsAAAAA:qYNA0_uawnsPC4EJ6O5Jz2GCeaA2BXNOUUJBIVFiS2ic-Pm9L5FafLhVtIWg4flYGsEsJgWgMNuPx0w">Steel et al. 2021</a>. The height thresholds used to define canopy (&gt;8 m), subcanopy (2–8 m) and understory (1–2 m). Crown groups are defined by the number of trees in a crown group and the composition of canopy and subcanopy trees in the group:</p>
+<p>For reference, tree classes are based on <a href="https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/1365-2745.13764?casa_token=ob4t10qIRrsAAAAA:qYNA0_uawnsPC4EJ6O5Jz2GCeaA2BXNOUUJBIVFiS2ic-Pm9L5FafLhVtIWg4flYGsEsJgWgMNuPx0w">Steel et al. 2021</a>. Height thresholds were used to define canopy (&gt;8 m), subcanopy (2–8 m) and understory (1–2 m). Crown groups are defined by the number of trees in a crown group and the composition of canopy and subcanopy trees in the group:</p>
 <ul>
 <li><p><strong>Individual Tree</strong> : single tree (canopy or subcanopy) without interlocking crown</p></li>
 <li><p><strong>Small Group - Canopy</strong> : 2-10 trees with interlocking crowns where 75% or more of the trees are canopy (&gt;8 m)</p></li>
@@ -236,350 +430,433 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><p><strong>Continuous - Subcanopy</strong> : &gt;40 trees with interlocking crowns where 75% or more of the trees are subcanopy (2-8 m)</p></li>
 <li><p><strong>Continuous - Mixed</strong> : &gt;40 trees with interlocking crowns with neither canopy nor subcanopy comprising &gt;75% of trees</p></li>
 </ul>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="cover_analysis.html#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># table</span></span>
-<span id="cb3-2"><a href="cover_analysis.html#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(crowns_group <span class="sc">%&gt;%</span> sf<span class="sc">::</span><span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-3"><a href="cover_analysis.html#cb3-3" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">group_by</span>(</span>
-<span id="cb3-4"><a href="cover_analysis.html#cb3-4" aria-hidden="true" tabindex="-1"></a>          crown_group_class</span>
-<span id="cb3-5"><a href="cover_analysis.html#cb3-5" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-6"><a href="cover_analysis.html#cb3-6" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
-<span id="cb3-7"><a href="cover_analysis.html#cb3-7" aria-hidden="true" tabindex="-1"></a>          <span class="co"># plots = dplyr::n_distinct(plot)</span></span>
-<span id="cb3-8"><a href="cover_analysis.html#cb3-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">crown_groups =</span> dplyr<span class="sc">::</span><span class="fu">n</span>()</span>
-<span id="cb3-9"><a href="cover_analysis.html#cb3-9" aria-hidden="true" tabindex="-1"></a>          , <span class="at">mean_m2 =</span> <span class="fu">mean</span>(crown_group_area_ha, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">*</span> <span class="dv">10000</span></span>
-<span id="cb3-10"><a href="cover_analysis.html#cb3-10" aria-hidden="true" tabindex="-1"></a>          , <span class="at">trees_per_ha =</span> <span class="fu">mean</span>(trees_per_ha, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb3-11"><a href="cover_analysis.html#cb3-11" aria-hidden="true" tabindex="-1"></a>          , <span class="at">mean_count_trees =</span> <span class="fu">mean</span>(count_trees, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb3-12"><a href="cover_analysis.html#cb3-12" aria-hidden="true" tabindex="-1"></a>          , <span class="at">mean_count_trees_canopy =</span> <span class="fu">sum</span>(count_trees_canopy, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb3-13"><a href="cover_analysis.html#cb3-13" aria-hidden="true" tabindex="-1"></a>          , <span class="at">mean_count_trees_subcanopy =</span> <span class="fu">sum</span>(count_trees_subcanopy, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb3-14"><a href="cover_analysis.html#cb3-14" aria-hidden="true" tabindex="-1"></a>          , <span class="at">mean_hgt_m =</span> <span class="fu">mean</span>(min_hgt_m, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb3-15"><a href="cover_analysis.html#cb3-15" aria-hidden="true" tabindex="-1"></a>          <span class="co"># , min_hgt_m = min(min_hgt_m, na.rm = TRUE)</span></span>
-<span id="cb3-16"><a href="cover_analysis.html#cb3-16" aria-hidden="true" tabindex="-1"></a>          <span class="co"># , max_hgt_m = max(max_hgt_m, na.rm = TRUE)</span></span>
-<span id="cb3-17"><a href="cover_analysis.html#cb3-17" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-18"><a href="cover_analysis.html#cb3-18" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">arrange</span>(<span class="fu">desc</span>(mean_count_trees))</span>
-<span id="cb3-19"><a href="cover_analysis.html#cb3-19" aria-hidden="true" tabindex="-1"></a>  , <span class="at">format =</span> <span class="st">&quot;html&quot;</span> </span>
-<span id="cb3-20"><a href="cover_analysis.html#cb3-20" aria-hidden="true" tabindex="-1"></a>  , <span class="at">caption =</span> <span class="st">&quot;Tree Crown Groups Summary Statistics&quot;</span></span>
-<span id="cb3-21"><a href="cover_analysis.html#cb3-21" aria-hidden="true" tabindex="-1"></a>  , <span class="at">digits =</span> <span class="dv">1</span></span>
-<span id="cb3-22"><a href="cover_analysis.html#cb3-22" aria-hidden="true" tabindex="-1"></a>  , <span class="at">col.names =</span> <span class="fu">c</span>(</span>
-<span id="cb3-23"><a href="cover_analysis.html#cb3-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Classification&quot;</span></span>
-<span id="cb3-24"><a href="cover_analysis.html#cb3-24" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;# crown groups&quot;</span></span>
-<span id="cb3-25"><a href="cover_analysis.html#cb3-25" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;area (m2)&quot;</span></span>
-<span id="cb3-26"><a href="cover_analysis.html#cb3-26" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;TPH&quot;</span></span>
-<span id="cb3-27"><a href="cover_analysis.html#cb3-27" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;# trees&quot;</span></span>
-<span id="cb3-28"><a href="cover_analysis.html#cb3-28" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;# canopy trees&quot;</span></span>
-<span id="cb3-29"><a href="cover_analysis.html#cb3-29" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;# subcanopy trees&quot;</span></span>
-<span id="cb3-30"><a href="cover_analysis.html#cb3-30" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;height (m)&quot;</span></span>
-<span id="cb3-31"><a href="cover_analysis.html#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , &quot;min hgt (m)&quot;</span></span>
-<span id="cb3-32"><a href="cover_analysis.html#cb3-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , &quot;max hgt (m)&quot;</span></span>
-<span id="cb3-33"><a href="cover_analysis.html#cb3-33" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb3-34"><a href="cover_analysis.html#cb3-34" aria-hidden="true" tabindex="-1"></a>  , <span class="at">align=</span><span class="fu">rep</span>(<span class="st">&#39;c&#39;</span>, <span class="dv">5</span>)</span>
-<span id="cb3-35"><a href="cover_analysis.html#cb3-35" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-36"><a href="cover_analysis.html#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="co"># kable_classic() %&gt;%</span></span>
-<span id="cb3-37"><a href="cover_analysis.html#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="fu">add_header_above</span>(<span class="fu">c</span>(<span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;Mean&quot;</span> <span class="ot">=</span> <span class="dv">6</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb3-38"><a href="cover_analysis.html#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="fu">kable_material</span>(<span class="fu">c</span>(<span class="st">&quot;striped&quot;</span>, <span class="st">&quot;hover&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb3-39"><a href="cover_analysis.html#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="fu">kable_styling</span>(<span class="at">font_size =</span> <span class="dv">9</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-40"><a href="cover_analysis.html#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="fu">column_spec</span>(<span class="dv">1</span>, <span class="at">bold =</span> <span class="cn">TRUE</span>, <span class="at">width =</span> <span class="st">&quot;1em&quot;</span>)</span></code></pre></div>
-<table class=" lightable-material lightable-striped lightable-hover table" style="font-family: &quot;Source Sans Pro&quot;, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 9px; margin-left: auto; margin-right: auto;">
-<caption style="font-size: initial !important;">
-<span id="tab:unnamed-chunk-5">Table 4.1: </span>Tree Crown Groups Summary Statistics
-</caption>
-<thead>
-<tr>
-<th style="empty-cells: hide;border-bottom:hidden;" colspan="2">
-</th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="6">
-<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
-Mean
 </div>
-</th>
-</tr>
-<tr>
-<th style="text-align:center;">
-Classification
-</th>
-<th style="text-align:center;">
-# crown groups
-</th>
-<th style="text-align:center;">
-area (m2)
-</th>
-<th style="text-align:center;">
-TPH
-</th>
-<th style="text-align:center;">
-# trees
-</th>
-<th style="text-align:center;">
-# canopy trees
-</th>
-<th style="text-align:center;">
-# subcanopy trees
-</th>
-<th style="text-align:center;">
-height (m)
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Continuous - Mixed
-</td>
-<td style="text-align:center;">
-181
-</td>
-<td style="text-align:center;">
-39848.9
-</td>
-<td style="text-align:center;">
-365.9
-</td>
-<td style="text-align:center;">
-1284.5
-</td>
-<td style="text-align:center;">
-133442
-</td>
-<td style="text-align:center;">
-99047
-</td>
-<td style="text-align:center;">
-2.3
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Continuous - Subcanopy
-</td>
-<td style="text-align:center;">
-50
-</td>
-<td style="text-align:center;">
-5169.3
-</td>
-<td style="text-align:center;">
-462.2
-</td>
-<td style="text-align:center;">
-209.7
-</td>
-<td style="text-align:center;">
-1831
-</td>
-<td style="text-align:center;">
-8653
-</td>
-<td style="text-align:center;">
-2.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Continuous - Canopy
-</td>
-<td style="text-align:center;">
-100
-</td>
-<td style="text-align:center;">
-4900.5
-</td>
-<td style="text-align:center;">
-339.0
-</td>
-<td style="text-align:center;">
-157.4
-</td>
-<td style="text-align:center;">
-12999
-</td>
-<td style="text-align:center;">
-2741
-</td>
-<td style="text-align:center;">
-3.9
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Medium Group - Subcanopy
-</td>
-<td style="text-align:center;">
-149
-</td>
-<td style="text-align:center;">
-360.9
-</td>
-<td style="text-align:center;">
-583.5
-</td>
-<td style="text-align:center;">
-18.5
-</td>
-<td style="text-align:center;">
-321
-</td>
-<td style="text-align:center;">
-2436
-</td>
-<td style="text-align:center;">
-2.9
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Medium Group - Mixed
-</td>
-<td style="text-align:center;">
-342
-</td>
-<td style="text-align:center;">
-458.2
-</td>
-<td style="text-align:center;">
-435.5
-</td>
-<td style="text-align:center;">
-18.2
-</td>
-<td style="text-align:center;">
-3264
-</td>
-<td style="text-align:center;">
-2958
-</td>
-<td style="text-align:center;">
-3.5
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Medium Group - Canopy
-</td>
-<td style="text-align:center;">
-616
-</td>
-<td style="text-align:center;">
-525.1
-</td>
-<td style="text-align:center;">
-365.3
-</td>
-<td style="text-align:center;">
-17.7
-</td>
-<td style="text-align:center;">
-10163
-</td>
-<td style="text-align:center;">
-767
-</td>
-<td style="text-align:center;">
-8.0
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Small Group - Mixed
-</td>
-<td style="text-align:center;">
-4100
-</td>
-<td style="text-align:center;">
-66.9
-</td>
-<td style="text-align:center;">
-649.7
-</td>
-<td style="text-align:center;">
-3.2
-</td>
-<td style="text-align:center;">
-6846
-</td>
-<td style="text-align:center;">
-6449
-</td>
-<td style="text-align:center;">
-5.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Small Group - Canopy
-</td>
-<td style="text-align:center;">
-12597
-</td>
-<td style="text-align:center;">
-84.0
-</td>
-<td style="text-align:center;">
-463.5
-</td>
-<td style="text-align:center;">
-3.2
-</td>
-<td style="text-align:center;">
-38755
-</td>
-<td style="text-align:center;">
-1008
-</td>
-<td style="text-align:center;">
-12.5
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Small Group - Subcanopy
-</td>
-<td style="text-align:center;">
-3676
-</td>
-<td style="text-align:center;">
-36.1
-</td>
-<td style="text-align:center;">
-1290.0
-</td>
-<td style="text-align:center;">
-2.9
-</td>
-<td style="text-align:center;">
-417
-</td>
-<td style="text-align:center;">
-10156
-</td>
-<td style="text-align:center;">
-3.8
-</td>
-</tr>
-<tr>
-<td style="text-align:center;width: 1em; font-weight: bold;">
-Individual Tree
-</td>
-<td style="text-align:center;">
-63534
-</td>
-<td style="text-align:center;">
-14.2
-</td>
-<td style="text-align:center;">
-1908.8
-</td>
-<td style="text-align:center;">
-1.0
-</td>
-<td style="text-align:center;">
-34386
-</td>
-<td style="text-align:center;">
-29148
-</td>
-<td style="text-align:center;">
-9.3
-</td>
-</tr>
-</tbody>
-</table>
+<div id="total-area-by-crown-group-class" class="section level2 hasAnchor" number="4.4">
+<h2><span class="header-section-number">4.4</span> Total Area by Crown Group Class<a href="cover_analysis.html#total-area-by-crown-group-class" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>The total area of the BHEF is approximately <strong>1,378 hectares (3,405 acres)</strong>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="cover_analysis.html#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set up data</span></span>
+<span id="cb7-2"><a href="cover_analysis.html#cb7-2" aria-hidden="true" tabindex="-1"></a>bhef_area_ha <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(bhef_boundary))<span class="sc">/</span><span class="dv">10000</span>)</span>
+<span id="cb7-3"><a href="cover_analysis.html#cb7-3" aria-hidden="true" tabindex="-1"></a>forestcov_area_ha <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(sf<span class="sc">::</span><span class="fu">st_intersection</span>(crowns_group, bhef_boundary)))<span class="sc">/</span><span class="dv">10000</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-4"><a href="cover_analysis.html#cb7-4" aria-hidden="true" tabindex="-1"></a>non_forestcov_area_ha <span class="ot">&lt;-</span> bhef_area_ha <span class="sc">-</span> forestcov_area_ha</span>
+<span id="cb7-5"><a href="cover_analysis.html#cb7-5" aria-hidden="true" tabindex="-1"></a>temp_dta <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb7-6"><a href="cover_analysis.html#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">crown_group_class =</span> <span class="st">&quot;Non-Tree Cover&quot;</span></span>
+<span id="cb7-7"><a href="cover_analysis.html#cb7-7" aria-hidden="true" tabindex="-1"></a>  , <span class="at">area_ha =</span> non_forestcov_area_ha</span>
+<span id="cb7-8"><a href="cover_analysis.html#cb7-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-9"><a href="cover_analysis.html#cb7-9" aria-hidden="true" tabindex="-1"></a>crowns_group_area_sum <span class="ot">&lt;-</span> crowns_group <span class="sc">%&gt;%</span> </span>
+<span id="cb7-10"><a href="cover_analysis.html#cb7-10" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_intersection</span>(bhef_boundary) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-11"><a href="cover_analysis.html#cb7-11" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">crown_group_area_ha =</span> <span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(.))<span class="sc">/</span><span class="dv">10000</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-12"><a href="cover_analysis.html#cb7-12" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-13"><a href="cover_analysis.html#cb7-13" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(crown_group_class) <span class="sc">%&gt;%</span></span>
+<span id="cb7-14"><a href="cover_analysis.html#cb7-14" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">area_ha =</span> <span class="fu">sum</span>(crown_group_area_ha, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-15"><a href="cover_analysis.html#cb7-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb7-16"><a href="cover_analysis.html#cb7-16" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(temp_dta) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-17"><a href="cover_analysis.html#cb7-17" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb7-18"><a href="cover_analysis.html#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_area =</span> area_ha <span class="sc">/</span> bhef_area_ha</span>
+<span id="cb7-19"><a href="cover_analysis.html#cb7-19" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-20"><a href="cover_analysis.html#cb7-20" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(<span class="fu">desc</span>(area_ha))</span>
+<span id="cb7-21"><a href="cover_analysis.html#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb7-22"><a href="cover_analysis.html#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> crowns_group_area_sum) <span class="sc">+</span> </span>
+<span id="cb7-23"><a href="cover_analysis.html#cb7-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(crown_group_class, area_ha), <span class="at">x =</span> area_ha, <span class="at">fill =</span> area_ha), <span class="at">width =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb7-24"><a href="cover_analysis.html#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb7-25"><a href="cover_analysis.html#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(crown_group_class, area_ha), <span class="at">x =</span> area_ha <span class="sc">+</span> <span class="dv">2</span>, <span class="at">label =</span> scales<span class="sc">::</span><span class="fu">comma</span>(area_ha, <span class="at">accuracy =</span> <span class="dv">1</span>))</span>
+<span id="cb7-26"><a href="cover_analysis.html#cb7-26" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;black&quot;</span></span>
+<span id="cb7-27"><a href="cover_analysis.html#cb7-27" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">4</span></span>
+<span id="cb7-28"><a href="cover_analysis.html#cb7-28" aria-hidden="true" tabindex="-1"></a>    , <span class="at">fontface =</span> <span class="st">&quot;bold&quot;</span></span>
+<span id="cb7-29"><a href="cover_analysis.html#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , position = position_dodge(0.9)</span></span>
+<span id="cb7-30"><a href="cover_analysis.html#cb7-30" aria-hidden="true" tabindex="-1"></a>    , <span class="at">hjust =</span> <span class="sc">-</span><span class="fl">0.1</span></span>
+<span id="cb7-31"><a href="cover_analysis.html#cb7-31" aria-hidden="true" tabindex="-1"></a>    , <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span></span>
+<span id="cb7-32"><a href="cover_analysis.html#cb7-32" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb7-33"><a href="cover_analysis.html#cb7-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb7-34"><a href="cover_analysis.html#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(crown_group_class, area_ha), <span class="at">x =</span> area_ha <span class="sc">+</span> <span class="dv">2</span>, <span class="at">label =</span> scales<span class="sc">::</span><span class="fu">percent</span>(pct_area, <span class="at">accuracy =</span> <span class="dv">1</span>))</span>
+<span id="cb7-35"><a href="cover_analysis.html#cb7-35" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;black&quot;</span></span>
+<span id="cb7-36"><a href="cover_analysis.html#cb7-36" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">3</span></span>
+<span id="cb7-37"><a href="cover_analysis.html#cb7-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , position = position_dodge(0.9)</span></span>
+<span id="cb7-38"><a href="cover_analysis.html#cb7-38" aria-hidden="true" tabindex="-1"></a>    , <span class="at">hjust =</span> <span class="sc">-</span><span class="fl">0.1</span></span>
+<span id="cb7-39"><a href="cover_analysis.html#cb7-39" aria-hidden="true" tabindex="-1"></a>    , <span class="at">vjust =</span> <span class="fl">0.5</span></span>
+<span id="cb7-40"><a href="cover_analysis.html#cb7-40" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb7-41"><a href="cover_analysis.html#cb7-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb7-42"><a href="cover_analysis.html#cb7-42" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="st">&quot;BHEF Area (ha) by Crown Group Class&quot;</span></span>
+<span id="cb7-43"><a href="cover_analysis.html#cb7-43" aria-hidden="true" tabindex="-1"></a>      , <span class="at">subtitle =</span> <span class="st">&quot;*Note: a tree is classified as cover &gt;= 2m tall in 2017 based on lidar acquisition&quot;</span></span>
+<span id="cb7-44"><a href="cover_analysis.html#cb7-44" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb7-45"><a href="cover_analysis.html#cb7-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;Area (ha)&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-46"><a href="cover_analysis.html#cb7-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-47"><a href="cover_analysis.html#cb7-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb7-48"><a href="cover_analysis.html#cb7-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">alpha =</span> <span class="fl">0.7</span>, <span class="at">option =</span> <span class="st">&quot;cividis&quot;</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb7-49"><a href="cover_analysis.html#cb7-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb7-50"><a href="cover_analysis.html#cb7-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb7-51"><a href="cover_analysis.html#cb7-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&quot;none&quot;</span></span>
+<span id="cb7-52"><a href="cover_analysis.html#cb7-52" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">0</span>))</span>
+<span id="cb7-53"><a href="cover_analysis.html#cb7-53" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">8</span>, <span class="at">face=</span><span class="st">&quot;italic&quot;</span>, <span class="at">color=</span><span class="st">&quot;gray20&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span>
+<span id="cb7-54"><a href="cover_analysis.html#cb7-54" aria-hidden="true" tabindex="-1"></a>    , <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>)</span>
+<span id="cb7-55"><a href="cover_analysis.html#cb7-55" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-8-1.png" width="960" /></p>
+</div>
+<div id="no-harvest-post-lidar-area-by-crown-group-class" class="section level2 hasAnchor" number="4.5">
+<h2><span class="header-section-number">4.5</span> No Harvest Post-Lidar Area by Crown Group Class<a href="cover_analysis.html#no-harvest-post-lidar-area-by-crown-group-class" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>The total area of the BHEF which has <em>not</em> been harvested after the 2017 lidar acquisition is approximately <strong>1,197 hectares (2,957 acres)</strong>.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="cover_analysis.html#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set up data</span></span>
+<span id="cb8-2"><a href="cover_analysis.html#cb8-2" aria-hidden="true" tabindex="-1"></a>bhef_area_ha <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(sf<span class="sc">::</span><span class="fu">st_difference</span>(bhef_boundary, sf<span class="sc">::</span><span class="fu">st_union</span>(harvests_post_lidar))))<span class="sc">/</span><span class="dv">10000</span>)</span>
+<span id="cb8-3"><a href="cover_analysis.html#cb8-3" aria-hidden="true" tabindex="-1"></a>forestcov_area_ha <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(sf<span class="sc">::</span><span class="fu">st_intersection</span>(crowns_group, sf<span class="sc">::</span><span class="fu">st_difference</span>(bhef_boundary, sf<span class="sc">::</span><span class="fu">st_union</span>(harvests_post_lidar)))))<span class="sc">/</span><span class="dv">10000</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-4"><a href="cover_analysis.html#cb8-4" aria-hidden="true" tabindex="-1"></a>non_forestcov_area_ha <span class="ot">&lt;-</span> bhef_area_ha <span class="sc">-</span> forestcov_area_ha</span>
+<span id="cb8-5"><a href="cover_analysis.html#cb8-5" aria-hidden="true" tabindex="-1"></a>temp_dta <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb8-6"><a href="cover_analysis.html#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">crown_group_class =</span> <span class="st">&quot;Non-Tree Cover&quot;</span></span>
+<span id="cb8-7"><a href="cover_analysis.html#cb8-7" aria-hidden="true" tabindex="-1"></a>  , <span class="at">area_ha =</span> non_forestcov_area_ha</span>
+<span id="cb8-8"><a href="cover_analysis.html#cb8-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-9"><a href="cover_analysis.html#cb8-9" aria-hidden="true" tabindex="-1"></a>crowns_group_area_sum_woharv <span class="ot">&lt;-</span> crowns_group <span class="sc">%&gt;%</span> </span>
+<span id="cb8-10"><a href="cover_analysis.html#cb8-10" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_intersection</span>(sf<span class="sc">::</span><span class="fu">st_difference</span>(bhef_boundary, sf<span class="sc">::</span><span class="fu">st_union</span>(harvests_post_lidar))) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-11"><a href="cover_analysis.html#cb8-11" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">crown_group_area_ha =</span> <span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(.))<span class="sc">/</span><span class="dv">10000</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-12"><a href="cover_analysis.html#cb8-12" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-13"><a href="cover_analysis.html#cb8-13" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(crown_group_class) <span class="sc">%&gt;%</span></span>
+<span id="cb8-14"><a href="cover_analysis.html#cb8-14" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">area_ha =</span> <span class="fu">sum</span>(crown_group_area_ha, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-15"><a href="cover_analysis.html#cb8-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb8-16"><a href="cover_analysis.html#cb8-16" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(temp_dta) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-17"><a href="cover_analysis.html#cb8-17" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb8-18"><a href="cover_analysis.html#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_area =</span> area_ha <span class="sc">/</span> bhef_area_ha</span>
+<span id="cb8-19"><a href="cover_analysis.html#cb8-19" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-20"><a href="cover_analysis.html#cb8-20" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(<span class="fu">desc</span>(area_ha))</span>
+<span id="cb8-21"><a href="cover_analysis.html#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb8-22"><a href="cover_analysis.html#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> crowns_group_area_sum_woharv) <span class="sc">+</span> </span>
+<span id="cb8-23"><a href="cover_analysis.html#cb8-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(crown_group_class, area_ha), <span class="at">x =</span> area_ha, <span class="at">fill =</span> area_ha), <span class="at">width =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb8-24"><a href="cover_analysis.html#cb8-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb8-25"><a href="cover_analysis.html#cb8-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(crown_group_class, area_ha), <span class="at">x =</span> area_ha <span class="sc">+</span> <span class="dv">2</span>, <span class="at">label =</span> scales<span class="sc">::</span><span class="fu">comma</span>(area_ha, <span class="at">accuracy =</span> <span class="dv">1</span>))</span>
+<span id="cb8-26"><a href="cover_analysis.html#cb8-26" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;black&quot;</span></span>
+<span id="cb8-27"><a href="cover_analysis.html#cb8-27" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">4</span></span>
+<span id="cb8-28"><a href="cover_analysis.html#cb8-28" aria-hidden="true" tabindex="-1"></a>    , <span class="at">fontface =</span> <span class="st">&quot;bold&quot;</span></span>
+<span id="cb8-29"><a href="cover_analysis.html#cb8-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , position = position_dodge(0.9)</span></span>
+<span id="cb8-30"><a href="cover_analysis.html#cb8-30" aria-hidden="true" tabindex="-1"></a>    , <span class="at">hjust =</span> <span class="sc">-</span><span class="fl">0.1</span></span>
+<span id="cb8-31"><a href="cover_analysis.html#cb8-31" aria-hidden="true" tabindex="-1"></a>    , <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span></span>
+<span id="cb8-32"><a href="cover_analysis.html#cb8-32" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb8-33"><a href="cover_analysis.html#cb8-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb8-34"><a href="cover_analysis.html#cb8-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">reorder</span>(crown_group_class, area_ha), <span class="at">x =</span> area_ha <span class="sc">+</span> <span class="dv">2</span>, <span class="at">label =</span> scales<span class="sc">::</span><span class="fu">percent</span>(pct_area, <span class="at">accuracy =</span> <span class="dv">1</span>))</span>
+<span id="cb8-35"><a href="cover_analysis.html#cb8-35" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;black&quot;</span></span>
+<span id="cb8-36"><a href="cover_analysis.html#cb8-36" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">3</span></span>
+<span id="cb8-37"><a href="cover_analysis.html#cb8-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , position = position_dodge(0.9)</span></span>
+<span id="cb8-38"><a href="cover_analysis.html#cb8-38" aria-hidden="true" tabindex="-1"></a>    , <span class="at">hjust =</span> <span class="sc">-</span><span class="fl">0.1</span></span>
+<span id="cb8-39"><a href="cover_analysis.html#cb8-39" aria-hidden="true" tabindex="-1"></a>    , <span class="at">vjust =</span> <span class="fl">0.5</span></span>
+<span id="cb8-40"><a href="cover_analysis.html#cb8-40" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb8-41"><a href="cover_analysis.html#cb8-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb8-42"><a href="cover_analysis.html#cb8-42" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="st">&quot;No Harvest Post-Lidar BHEF Area (ha) by Crown Group Class&quot;</span></span>
+<span id="cb8-43"><a href="cover_analysis.html#cb8-43" aria-hidden="true" tabindex="-1"></a>      , <span class="at">subtitle =</span> <span class="st">&quot;*Note: a tree is classified as cover &gt;= 2m tall in 2017 based on lidar acquisition&quot;</span></span>
+<span id="cb8-44"><a href="cover_analysis.html#cb8-44" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb8-45"><a href="cover_analysis.html#cb8-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;Area (ha)&quot;</span>) <span class="sc">+</span></span>
+<span id="cb8-46"><a href="cover_analysis.html#cb8-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb8-47"><a href="cover_analysis.html#cb8-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb8-48"><a href="cover_analysis.html#cb8-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">alpha =</span> <span class="fl">0.7</span>, <span class="at">option =</span> <span class="st">&quot;cividis&quot;</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb8-49"><a href="cover_analysis.html#cb8-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb8-50"><a href="cover_analysis.html#cb8-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb8-51"><a href="cover_analysis.html#cb8-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&quot;none&quot;</span></span>
+<span id="cb8-52"><a href="cover_analysis.html#cb8-52" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">0</span>))</span>
+<span id="cb8-53"><a href="cover_analysis.html#cb8-53" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">8</span>, <span class="at">face=</span><span class="st">&quot;italic&quot;</span>, <span class="at">color=</span><span class="st">&quot;gray20&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span>
+<span id="cb8-54"><a href="cover_analysis.html#cb8-54" aria-hidden="true" tabindex="-1"></a>    , <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>)</span>
+<span id="cb8-55"><a href="cover_analysis.html#cb8-55" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-10-1.png" width="960" /></p>
+</div>
+<div id="spatial-arrangement-by-crown-group-class" class="section level2 hasAnchor" number="4.6">
+<h2><span class="header-section-number">4.6</span> Spatial Arrangement by Crown Group Class<a href="cover_analysis.html#spatial-arrangement-by-crown-group-class" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="cover_analysis.html#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># function to map for each cover class</span></span>
+<span id="cb9-2"><a href="cover_analysis.html#cb9-2" aria-hidden="true" tabindex="-1"></a>my_full_area_map <span class="ot">&lt;-</span> <span class="cf">function</span>(my_data, my_class){</span>
+<span id="cb9-3"><a href="cover_analysis.html#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#generate title</span></span>
+<span id="cb9-4"><a href="cover_analysis.html#cb9-4" aria-hidden="true" tabindex="-1"></a>  my_title <span class="ot">&lt;-</span> <span class="fu">paste0</span>(my_class)</span>
+<span id="cb9-5"><a href="cover_analysis.html#cb9-5" aria-hidden="true" tabindex="-1"></a>  my_caption <span class="ot">&lt;-</span> <span class="fu">paste0</span>(</span>
+<span id="cb9-6"><a href="cover_analysis.html#cb9-6" aria-hidden="true" tabindex="-1"></a>    scales<span class="sc">::</span><span class="fu">percent</span>(</span>
+<span id="cb9-7"><a href="cover_analysis.html#cb9-7" aria-hidden="true" tabindex="-1"></a>      (crowns_group_area_sum <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(crown_group_class<span class="sc">==</span>my_class))<span class="sc">$</span>pct_area</span>
+<span id="cb9-8"><a href="cover_analysis.html#cb9-8" aria-hidden="true" tabindex="-1"></a>      , <span class="at">accuracy =</span> <span class="dv">1</span></span>
+<span id="cb9-9"><a href="cover_analysis.html#cb9-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-10"><a href="cover_analysis.html#cb9-10" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot; of total BHEF Area&quot;</span></span>
+<span id="cb9-11"><a href="cover_analysis.html#cb9-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-12"><a href="cover_analysis.html#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">#plot</span></span>
+<span id="cb9-13"><a href="cover_analysis.html#cb9-13" aria-hidden="true" tabindex="-1"></a>  (</span>
+<span id="cb9-14"><a href="cover_analysis.html#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb9-15"><a href="cover_analysis.html#cb9-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">geom_sf</span>(<span class="at">data =</span> bhef_boundary, <span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">lwd =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">&quot;black&quot;</span>, <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>) <span class="sc">+</span></span>
+<span id="cb9-16"><a href="cover_analysis.html#cb9-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">geom_sf</span>(<span class="at">data =</span> rx_fire, <span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">lwd =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">&quot;orangered&quot;</span>) <span class="sc">+</span></span>
+<span id="cb9-17"><a href="cover_analysis.html#cb9-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">geom_sf</span>(<span class="at">data =</span> my_data <span class="sc">%&gt;%</span> </span>
+<span id="cb9-18"><a href="cover_analysis.html#cb9-18" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">filter</span>(crown_group_class<span class="sc">==</span>my_class)</span>
+<span id="cb9-19"><a href="cover_analysis.html#cb9-19" aria-hidden="true" tabindex="-1"></a>          , <span class="at">fill =</span> (col_data <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(crown_group_class<span class="sc">==</span>my_class))<span class="sc">$</span>crown_group_class_color</span>
+<span id="cb9-20"><a href="cover_analysis.html#cb9-20" aria-hidden="true" tabindex="-1"></a>          , <span class="at">lwd =</span> <span class="cn">NA</span></span>
+<span id="cb9-21"><a href="cover_analysis.html#cb9-21" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">+</span></span>
+<span id="cb9-22"><a href="cover_analysis.html#cb9-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">geom_sf_label</span>(<span class="at">data =</span> rx_fire, <span class="fu">aes</span>(<span class="at">label =</span> unit)</span>
+<span id="cb9-23"><a href="cover_analysis.html#cb9-23" aria-hidden="true" tabindex="-1"></a>        , <span class="at">label.size =</span> <span class="cn">NA</span></span>
+<span id="cb9-24"><a href="cover_analysis.html#cb9-24" aria-hidden="true" tabindex="-1"></a>        , <span class="at">alpha =</span> <span class="dv">0</span></span>
+<span id="cb9-25"><a href="cover_analysis.html#cb9-25" aria-hidden="true" tabindex="-1"></a>        , <span class="at">size =</span> <span class="dv">2</span></span>
+<span id="cb9-26"><a href="cover_analysis.html#cb9-26" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">+</span></span>
+<span id="cb9-27"><a href="cover_analysis.html#cb9-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">labs</span>(</span>
+<span id="cb9-28"><a href="cover_analysis.html#cb9-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">title =</span> my_title</span>
+<span id="cb9-29"><a href="cover_analysis.html#cb9-29" aria-hidden="true" tabindex="-1"></a>        , <span class="at">subtitle =</span> <span class="st">&quot;Spatial Arrangement on BHEF&quot;</span></span>
+<span id="cb9-30"><a href="cover_analysis.html#cb9-30" aria-hidden="true" tabindex="-1"></a>        , <span class="at">caption =</span> my_caption</span>
+<span id="cb9-31"><a href="cover_analysis.html#cb9-31" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">+</span></span>
+<span id="cb9-32"><a href="cover_analysis.html#cb9-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">xlab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb9-33"><a href="cover_analysis.html#cb9-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb9-34"><a href="cover_analysis.html#cb9-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">scale_x_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb9-35"><a href="cover_analysis.html#cb9-35" aria-hidden="true" tabindex="-1"></a>      <span class="fu">scale_y_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb9-36"><a href="cover_analysis.html#cb9-36" aria-hidden="true" tabindex="-1"></a>      <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb9-37"><a href="cover_analysis.html#cb9-37" aria-hidden="true" tabindex="-1"></a>      <span class="fu">theme</span>(</span>
+<span id="cb9-38"><a href="cover_analysis.html#cb9-38" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">&quot;none&quot;</span></span>
+<span id="cb9-39"><a href="cover_analysis.html#cb9-39" aria-hidden="true" tabindex="-1"></a>        , <span class="at">legend.direction =</span> <span class="st">&quot;horizontal&quot;</span></span>
+<span id="cb9-40"><a href="cover_analysis.html#cb9-40" aria-hidden="true" tabindex="-1"></a>        , <span class="at">legend.title =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb9-41"><a href="cover_analysis.html#cb9-41" aria-hidden="true" tabindex="-1"></a>        , <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>)</span>
+<span id="cb9-42"><a href="cover_analysis.html#cb9-42" aria-hidden="true" tabindex="-1"></a>        , <span class="at">panel.border =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb9-43"><a href="cover_analysis.html#cb9-43" aria-hidden="true" tabindex="-1"></a>        , <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">0</span>))</span>
+<span id="cb9-44"><a href="cover_analysis.html#cb9-44" aria-hidden="true" tabindex="-1"></a>        , <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">10</span>, <span class="at">color=</span><span class="st">&quot;gray20&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span>
+<span id="cb9-45"><a href="cover_analysis.html#cb9-45" aria-hidden="true" tabindex="-1"></a>        , <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">10</span>, <span class="at">face=</span><span class="st">&quot;bold.italic&quot;</span>)</span>
+<span id="cb9-46"><a href="cover_analysis.html#cb9-46" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb9-47"><a href="cover_analysis.html#cb9-47" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-48"><a href="cover_analysis.html#cb9-48" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-49"><a href="cover_analysis.html#cb9-49" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-50"><a href="cover_analysis.html#cb9-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-51"><a href="cover_analysis.html#cb9-51" aria-hidden="true" tabindex="-1"></a><span class="co"># plot with loop to create a plot for each class</span></span>
+<span id="cb9-52"><a href="cover_analysis.html#cb9-52" aria-hidden="true" tabindex="-1"></a>my_classes <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(crowns_group<span class="sc">$</span>crown_group_class))</span>
+<span id="cb9-53"><a href="cover_analysis.html#cb9-53" aria-hidden="true" tabindex="-1"></a><span class="co"># for (i in 1:length(my_classes)) {</span></span>
+<span id="cb9-54"><a href="cover_analysis.html#cb9-54" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb9-55"><a href="cover_analysis.html#cb9-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>( </span>
+<span id="cb9-56"><a href="cover_analysis.html#cb9-56" aria-hidden="true" tabindex="-1"></a>    <span class="fu">my_full_area_map</span>(</span>
+<span id="cb9-57"><a href="cover_analysis.html#cb9-57" aria-hidden="true" tabindex="-1"></a>      <span class="at">my_data =</span> crowns_group <span class="sc">%&gt;%</span> sf<span class="sc">::</span><span class="fu">st_intersection</span>(bhef_boundary)</span>
+<span id="cb9-58"><a href="cover_analysis.html#cb9-58" aria-hidden="true" tabindex="-1"></a>      , <span class="at">my_class =</span> my_classes[i]</span>
+<span id="cb9-59"><a href="cover_analysis.html#cb9-59" aria-hidden="true" tabindex="-1"></a>    ) </span>
+<span id="cb9-60"><a href="cover_analysis.html#cb9-60" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-61"><a href="cover_analysis.html#cb9-61" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-12-1.png" width="960" /><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-12-2.png" width="960" /><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-12-3.png" width="960" /></p>
+</div>
+<div id="rx-fire-unit-summary" class="section level2 hasAnchor" number="4.7">
+<h2><span class="header-section-number">4.7</span> Rx Fire Unit Summary<a href="cover_analysis.html#rx-fire-unit-summary" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="cover_analysis.html#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># summarize area by coverage type</span></span>
+<span id="cb10-2"><a href="cover_analysis.html#cb10-2" aria-hidden="true" tabindex="-1"></a>temp_rx_crown <span class="ot">&lt;-</span> rx_fire <span class="sc">%&gt;%</span> </span>
+<span id="cb10-3"><a href="cover_analysis.html#cb10-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(unit) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-4"><a href="cover_analysis.html#cb10-4" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_difference</span>(</span>
+<span id="cb10-5"><a href="cover_analysis.html#cb10-5" aria-hidden="true" tabindex="-1"></a>    sf<span class="sc">::</span><span class="fu">st_union</span>(harvests_post_lidar <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(nffid))</span>
+<span id="cb10-6"><a href="cover_analysis.html#cb10-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb10-7"><a href="cover_analysis.html#cb10-7" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_intersection</span>(</span>
+<span id="cb10-8"><a href="cover_analysis.html#cb10-8" aria-hidden="true" tabindex="-1"></a>    crowns_group <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(crown_group_class)</span>
+<span id="cb10-9"><a href="cover_analysis.html#cb10-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-10"><a href="cover_analysis.html#cb10-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">area_m2 =</span> <span class="fu">as.numeric</span>(sf<span class="sc">::</span><span class="fu">st_area</span>(.))) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-11"><a href="cover_analysis.html#cb10-11" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-12"><a href="cover_analysis.html#cb10-12" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(unit, crown_group_class) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-13"><a href="cover_analysis.html#cb10-13" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">area_m2 =</span> <span class="fu">sum</span>(area_m2)) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-14"><a href="cover_analysis.html#cb10-14" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-15"><a href="cover_analysis.html#cb10-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(unit, crown_group_class, area_m2)</span>
+<span id="cb10-16"><a href="cover_analysis.html#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co"># join to base rx fire data</span></span>
+<span id="cb10-17"><a href="cover_analysis.html#cb10-17" aria-hidden="true" tabindex="-1"></a>rx_crown_sum <span class="ot">&lt;-</span> rx_fire <span class="sc">%&gt;%</span> </span>
+<span id="cb10-18"><a href="cover_analysis.html#cb10-18" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-19"><a href="cover_analysis.html#cb10-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(unit, postlidar_harvest_area_m2) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-20"><a href="cover_analysis.html#cb10-20" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">area_m2 =</span> postlidar_harvest_area_m2) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-21"><a href="cover_analysis.html#cb10-21" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">crown_group_class =</span> <span class="st">&quot;Post-Lidar Harvest&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-22"><a href="cover_analysis.html#cb10-22" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">relocate</span>(<span class="fu">names</span>(temp_rx_crown)) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-23"><a href="cover_analysis.html#cb10-23" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(temp_rx_crown) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-24"><a href="cover_analysis.html#cb10-24" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(</span>
+<span id="cb10-25"><a href="cover_analysis.html#cb10-25" aria-hidden="true" tabindex="-1"></a>    rx_fire <span class="sc">%&gt;%</span> </span>
+<span id="cb10-26"><a href="cover_analysis.html#cb10-26" aria-hidden="true" tabindex="-1"></a>      sf<span class="sc">::</span><span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-27"><a href="cover_analysis.html#cb10-27" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">select</span>(unit, area_m2) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-28"><a href="cover_analysis.html#cb10-28" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">total_area_m2 =</span> area_m2)</span>
+<span id="cb10-29"><a href="cover_analysis.html#cb10-29" aria-hidden="true" tabindex="-1"></a>    , <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;unit&quot;</span> <span class="ot">=</span> <span class="st">&quot;unit&quot;</span>)</span>
+<span id="cb10-30"><a href="cover_analysis.html#cb10-30" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb10-31"><a href="cover_analysis.html#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="co"># find non-tree cover</span></span>
+<span id="cb10-32"><a href="cover_analysis.html#cb10-32" aria-hidden="true" tabindex="-1"></a>rx_crown_sum <span class="ot">&lt;-</span> rx_crown_sum <span class="sc">%&gt;%</span> </span>
+<span id="cb10-33"><a href="cover_analysis.html#cb10-33" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(</span>
+<span id="cb10-34"><a href="cover_analysis.html#cb10-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># find left over area</span></span>
+<span id="cb10-35"><a href="cover_analysis.html#cb10-35" aria-hidden="true" tabindex="-1"></a>    rx_crown_sum <span class="sc">%&gt;%</span> </span>
+<span id="cb10-36"><a href="cover_analysis.html#cb10-36" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">group_by</span>(unit) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-37"><a href="cover_analysis.html#cb10-37" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">cov_area_m2 =</span> <span class="fu">sum</span>(area_m2), <span class="at">total_area_m2 =</span> <span class="fu">max</span>(total_area_m2)) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-38"><a href="cover_analysis.html#cb10-38" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-39"><a href="cover_analysis.html#cb10-39" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb10-40"><a href="cover_analysis.html#cb10-40" aria-hidden="true" tabindex="-1"></a>        <span class="at">area_m2 =</span> total_area_m2 <span class="sc">-</span> cov_area_m2</span>
+<span id="cb10-41"><a href="cover_analysis.html#cb10-41" aria-hidden="true" tabindex="-1"></a>        , <span class="at">crown_group_class =</span> <span class="st">&quot;Non-Tree Cover&quot;</span></span>
+<span id="cb10-42"><a href="cover_analysis.html#cb10-42" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-43"><a href="cover_analysis.html#cb10-43" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">names</span>(rx_crown_sum)) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-44"><a href="cover_analysis.html#cb10-44" aria-hidden="true" tabindex="-1"></a>      dplyr<span class="sc">::</span><span class="fu">relocate</span>(<span class="fu">names</span>(rx_crown_sum))</span>
+<span id="cb10-45"><a href="cover_analysis.html#cb10-45" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-46"><a href="cover_analysis.html#cb10-46" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb10-47"><a href="cover_analysis.html#cb10-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_area =</span> area_m2<span class="sc">/</span>total_area_m2</span>
+<span id="cb10-48"><a href="cover_analysis.html#cb10-48" aria-hidden="true" tabindex="-1"></a>    , <span class="at">area_ha =</span> area_m2<span class="sc">/</span><span class="dv">10000</span></span>
+<span id="cb10-49"><a href="cover_analysis.html#cb10-49" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-50"><a href="cover_analysis.html#cb10-50" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(unit, crown_group_class)</span>
+<span id="cb10-51"><a href="cover_analysis.html#cb10-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-52"><a href="cover_analysis.html#cb10-52" aria-hidden="true" tabindex="-1"></a>rx_crown_sum <span class="sc">%&gt;%</span> </span>
+<span id="cb10-53"><a href="cover_analysis.html#cb10-53" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb10-54"><a href="cover_analysis.html#cb10-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">cover =</span> dplyr<span class="sc">::</span><span class="fu">case_when</span>(</span>
+<span id="cb10-55"><a href="cover_analysis.html#cb10-55" aria-hidden="true" tabindex="-1"></a>      crown_group_class <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Non-Tree Cover&quot;</span>, <span class="st">&quot;Post-Lidar Harvest&quot;</span>) <span class="sc">~</span> crown_group_class</span>
+<span id="cb10-56"><a href="cover_analysis.html#cb10-56" aria-hidden="true" tabindex="-1"></a>      , <span class="fu">startsWith</span>(crown_group_class, <span class="st">&quot;Continuous&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Continuous Tree Cover&quot;</span></span>
+<span id="cb10-57"><a href="cover_analysis.html#cb10-57" aria-hidden="true" tabindex="-1"></a>      , <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">&quot;Sm/Med Grp. &amp; Indiv. Tree Cover&quot;</span></span>
+<span id="cb10-58"><a href="cover_analysis.html#cb10-58" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-59"><a href="cover_analysis.html#cb10-59" aria-hidden="true" tabindex="-1"></a>    , <span class="at">cover_num =</span> dplyr<span class="sc">::</span><span class="fu">case_when</span>(</span>
+<span id="cb10-60"><a href="cover_analysis.html#cb10-60" aria-hidden="true" tabindex="-1"></a>      crown_group_class <span class="sc">==</span> <span class="st">&quot;Non-Tree Cover&quot;</span> <span class="sc">~</span> <span class="dv">4</span></span>
+<span id="cb10-61"><a href="cover_analysis.html#cb10-61" aria-hidden="true" tabindex="-1"></a>      , crown_group_class <span class="sc">==</span> <span class="st">&quot;Post-Lidar Harvest&quot;</span> <span class="sc">~</span> <span class="dv">3</span></span>
+<span id="cb10-62"><a href="cover_analysis.html#cb10-62" aria-hidden="true" tabindex="-1"></a>      , <span class="fu">startsWith</span>(crown_group_class, <span class="st">&quot;Continuous&quot;</span>) <span class="sc">~</span> <span class="dv">1</span></span>
+<span id="cb10-63"><a href="cover_analysis.html#cb10-63" aria-hidden="true" tabindex="-1"></a>      , <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">2</span></span>
+<span id="cb10-64"><a href="cover_analysis.html#cb10-64" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-65"><a href="cover_analysis.html#cb10-65" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-66"><a href="cover_analysis.html#cb10-66" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(unit, cover, cover_num) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-67"><a href="cover_analysis.html#cb10-67" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
+<span id="cb10-68"><a href="cover_analysis.html#cb10-68" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_area =</span> <span class="fu">sum</span>(pct_area)</span>
+<span id="cb10-69"><a href="cover_analysis.html#cb10-69" aria-hidden="true" tabindex="-1"></a>    , <span class="at">area_m2 =</span> <span class="fu">sum</span>(area_m2)</span>
+<span id="cb10-70"><a href="cover_analysis.html#cb10-70" aria-hidden="true" tabindex="-1"></a>    , <span class="at">total_area_ha =</span> <span class="fu">max</span>(total_area_m2)<span class="sc">/</span><span class="dv">10000</span></span>
+<span id="cb10-71"><a href="cover_analysis.html#cb10-71" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-72"><a href="cover_analysis.html#cb10-72" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-73"><a href="cover_analysis.html#cb10-73" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb10-74"><a href="cover_analysis.html#cb10-74" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb10-75"><a href="cover_analysis.html#cb10-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(</span>
+<span id="cb10-76"><a href="cover_analysis.html#cb10-76" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="fu">reorder</span>(unit, total_area_ha)</span>
+<span id="cb10-77"><a href="cover_analysis.html#cb10-77" aria-hidden="true" tabindex="-1"></a>      , <span class="at">x =</span> pct_area</span>
+<span id="cb10-78"><a href="cover_analysis.html#cb10-78" aria-hidden="true" tabindex="-1"></a>      , <span class="at">fill =</span> <span class="fu">reorder</span>(cover, <span class="sc">-</span>cover_num)</span>
+<span id="cb10-79"><a href="cover_analysis.html#cb10-79" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-80"><a href="cover_analysis.html#cb10-80" aria-hidden="true" tabindex="-1"></a>    , <span class="at">width =</span> <span class="fl">0.7</span></span>
+<span id="cb10-81"><a href="cover_analysis.html#cb10-81" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb10-82"><a href="cover_analysis.html#cb10-82" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_d</span>(<span class="at">option =</span> <span class="st">&quot;cividis&quot;</span>, <span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb10-83"><a href="cover_analysis.html#cb10-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb10-84"><a href="cover_analysis.html#cb10-84" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(</span>
+<span id="cb10-85"><a href="cover_analysis.html#cb10-85" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="fu">reorder</span>(unit, total_area_ha)</span>
+<span id="cb10-86"><a href="cover_analysis.html#cb10-86" aria-hidden="true" tabindex="-1"></a>      , <span class="at">x =</span> pct_area</span>
+<span id="cb10-87"><a href="cover_analysis.html#cb10-87" aria-hidden="true" tabindex="-1"></a>      , <span class="at">label =</span> scales<span class="sc">::</span><span class="fu">percent</span>(</span>
+<span id="cb10-88"><a href="cover_analysis.html#cb10-88" aria-hidden="true" tabindex="-1"></a>          <span class="fu">ifelse</span>(pct_area <span class="sc">&lt;</span> <span class="fl">0.05</span>, <span class="cn">NA</span>, pct_area)</span>
+<span id="cb10-89"><a href="cover_analysis.html#cb10-89" aria-hidden="true" tabindex="-1"></a>        , <span class="at">accuracy =</span> <span class="dv">1</span>)</span>
+<span id="cb10-90"><a href="cover_analysis.html#cb10-90" aria-hidden="true" tabindex="-1"></a>      , <span class="at">group =</span> <span class="fu">reorder</span>(cover, <span class="sc">-</span>cover_num)</span>
+<span id="cb10-91"><a href="cover_analysis.html#cb10-91" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-92"><a href="cover_analysis.html#cb10-92" aria-hidden="true" tabindex="-1"></a>    , <span class="at">position =</span> <span class="fu">position_stack</span>(<span class="at">vjust =</span> <span class="fl">0.5</span>)</span>
+<span id="cb10-93"><a href="cover_analysis.html#cb10-93" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;white&quot;</span></span>
+<span id="cb10-94"><a href="cover_analysis.html#cb10-94" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">3</span></span>
+<span id="cb10-95"><a href="cover_analysis.html#cb10-95" aria-hidden="true" tabindex="-1"></a>    , <span class="at">fontface =</span> <span class="st">&quot;bold&quot;</span></span>
+<span id="cb10-96"><a href="cover_analysis.html#cb10-96" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , hjust = -0.1</span></span>
+<span id="cb10-97"><a href="cover_analysis.html#cb10-97" aria-hidden="true" tabindex="-1"></a>    <span class="co"># , vjust = 0.1</span></span>
+<span id="cb10-98"><a href="cover_analysis.html#cb10-98" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb10-99"><a href="cover_analysis.html#cb10-99" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb10-100"><a href="cover_analysis.html#cb10-100" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(</span>
+<span id="cb10-101"><a href="cover_analysis.html#cb10-101" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="fu">reorder</span>(unit, total_area_ha)</span>
+<span id="cb10-102"><a href="cover_analysis.html#cb10-102" aria-hidden="true" tabindex="-1"></a>      , <span class="at">x =</span> <span class="fl">1.06</span></span>
+<span id="cb10-103"><a href="cover_analysis.html#cb10-103" aria-hidden="true" tabindex="-1"></a>      , <span class="at">label =</span> <span class="fu">paste0</span>(scales<span class="sc">::</span><span class="fu">comma</span>(</span>
+<span id="cb10-104"><a href="cover_analysis.html#cb10-104" aria-hidden="true" tabindex="-1"></a>            total_area_ha</span>
+<span id="cb10-105"><a href="cover_analysis.html#cb10-105" aria-hidden="true" tabindex="-1"></a>          , <span class="at">accuracy =</span> <span class="dv">1</span>)</span>
+<span id="cb10-106"><a href="cover_analysis.html#cb10-106" aria-hidden="true" tabindex="-1"></a>        , <span class="st">&quot; ha&quot;</span></span>
+<span id="cb10-107"><a href="cover_analysis.html#cb10-107" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb10-108"><a href="cover_analysis.html#cb10-108" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-109"><a href="cover_analysis.html#cb10-109" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;black&quot;</span></span>
+<span id="cb10-110"><a href="cover_analysis.html#cb10-110" aria-hidden="true" tabindex="-1"></a>    , <span class="at">size =</span> <span class="dv">4</span></span>
+<span id="cb10-111"><a href="cover_analysis.html#cb10-111" aria-hidden="true" tabindex="-1"></a>    , <span class="at">fontface =</span> <span class="st">&quot;bold&quot;</span></span>
+<span id="cb10-112"><a href="cover_analysis.html#cb10-112" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb10-113"><a href="cover_analysis.html#cb10-113" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb10-114"><a href="cover_analysis.html#cb10-114" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="st">&quot;Cover Classification of Rx Fire Unit Area&quot;</span></span>
+<span id="cb10-115"><a href="cover_analysis.html#cb10-115" aria-hidden="true" tabindex="-1"></a>      , <span class="at">subtitle =</span> <span class="st">&quot;*Note: a tree is classified as cover &gt;= 2m tall in 2017 based on lidar acquisition&quot;</span></span>
+<span id="cb10-116"><a href="cover_analysis.html#cb10-116" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb10-117"><a href="cover_analysis.html#cb10-117" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;% of Area&quot;</span>) <span class="sc">+</span></span>
+<span id="cb10-118"><a href="cover_analysis.html#cb10-118" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;Rx Fire Unit&quot;</span>) <span class="sc">+</span></span>
+<span id="cb10-119"><a href="cover_analysis.html#cb10-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>percent) <span class="sc">+</span></span>
+<span id="cb10-120"><a href="cover_analysis.html#cb10-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb10-121"><a href="cover_analysis.html#cb10-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb10-122"><a href="cover_analysis.html#cb10-122" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">0</span>))</span>
+<span id="cb10-123"><a href="cover_analysis.html#cb10-123" aria-hidden="true" tabindex="-1"></a>    , <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">8</span>, <span class="at">face=</span><span class="st">&quot;italic&quot;</span>, <span class="at">color=</span><span class="st">&quot;gray20&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span>
+<span id="cb10-124"><a href="cover_analysis.html#cb10-124" aria-hidden="true" tabindex="-1"></a>    , <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>)</span>
+<span id="cb10-125"><a href="cover_analysis.html#cb10-125" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.title =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb10-126"><a href="cover_analysis.html#cb10-126" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-13-1.png" width="960" /></p>
+<div id="rx-fire-unit-cover-map" class="section level3 hasAnchor" number="4.7.1">
+<h3><span class="header-section-number">4.7.1</span> Rx Fire Unit Cover Map<a href="cover_analysis.html#rx-fire-unit-cover-map" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="cover_analysis.html#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb11-2"><a href="cover_analysis.html#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb11-3"><a href="cover_analysis.html#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># map of unit w/ canopy</span></span>
+<span id="cb11-4"><a href="cover_analysis.html#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb11-5"><a href="cover_analysis.html#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb11-6"><a href="cover_analysis.html#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb11-7"><a href="cover_analysis.html#cb11-7" aria-hidden="true" tabindex="-1"></a>  stars<span class="sc">::</span><span class="fu">geom_stars</span>(<span class="at">data =</span> naip_rgb[</span>
+<span id="cb11-8"><a href="cover_analysis.html#cb11-8" aria-hidden="true" tabindex="-1"></a>    rx_fire <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">slice</span>(<span class="dv">16</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-9"><a href="cover_analysis.html#cb11-9" aria-hidden="true" tabindex="-1"></a>    sf<span class="sc">::</span><span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">50</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-10"><a href="cover_analysis.html#cb11-10" aria-hidden="true" tabindex="-1"></a>    sf<span class="sc">::</span><span class="fu">st_transform</span>(<span class="at">crs =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(naip_st)) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-11"><a href="cover_analysis.html#cb11-11" aria-hidden="true" tabindex="-1"></a>    sf<span class="sc">::</span><span class="fu">st_bbox</span>()</span>
+<span id="cb11-12"><a href="cover_analysis.html#cb11-12" aria-hidden="true" tabindex="-1"></a>  ]) <span class="sc">+</span></span>
+<span id="cb11-13"><a href="cover_analysis.html#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_identity</span>() <span class="sc">+</span> <span class="co"># !!! don&#39;t take this out or RGB plot will kill your computer</span></span>
+<span id="cb11-14"><a href="cover_analysis.html#cb11-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> rx_fire <span class="sc">%&gt;%</span></span>
+<span id="cb11-15"><a href="cover_analysis.html#cb11-15" aria-hidden="true" tabindex="-1"></a>          dplyr<span class="sc">::</span><span class="fu">slice</span>(<span class="dv">16</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-16"><a href="cover_analysis.html#cb11-16" aria-hidden="true" tabindex="-1"></a>          sf<span class="sc">::</span><span class="fu">st_transform</span>(<span class="at">crs =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(naip_st))</span>
+<span id="cb11-17"><a href="cover_analysis.html#cb11-17" aria-hidden="true" tabindex="-1"></a>      , <span class="at">alpha =</span> <span class="dv">0</span></span>
+<span id="cb11-18"><a href="cover_analysis.html#cb11-18" aria-hidden="true" tabindex="-1"></a>      , <span class="at">lwd =</span> <span class="fl">1.5</span></span>
+<span id="cb11-19"><a href="cover_analysis.html#cb11-19" aria-hidden="true" tabindex="-1"></a>      , <span class="at">color =</span> <span class="st">&quot;orangered&quot;</span></span>
+<span id="cb11-20"><a href="cover_analysis.html#cb11-20" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb11-21"><a href="cover_analysis.html#cb11-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> crowns_group <span class="sc">%&gt;%</span></span>
+<span id="cb11-22"><a href="cover_analysis.html#cb11-22" aria-hidden="true" tabindex="-1"></a>            sf<span class="sc">::</span><span class="fu">st_crop</span>(</span>
+<span id="cb11-23"><a href="cover_analysis.html#cb11-23" aria-hidden="true" tabindex="-1"></a>              rx_fire <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">slice</span>(<span class="dv">16</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-24"><a href="cover_analysis.html#cb11-24" aria-hidden="true" tabindex="-1"></a>              sf<span class="sc">::</span><span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">50</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-25"><a href="cover_analysis.html#cb11-25" aria-hidden="true" tabindex="-1"></a>              sf<span class="sc">::</span><span class="fu">st_bbox</span>()</span>
+<span id="cb11-26"><a href="cover_analysis.html#cb11-26" aria-hidden="true" tabindex="-1"></a>            ) <span class="sc">%&gt;%</span></span>
+<span id="cb11-27"><a href="cover_analysis.html#cb11-27" aria-hidden="true" tabindex="-1"></a>            sf<span class="sc">::</span><span class="fu">st_transform</span>(<span class="at">crs =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(naip_st))</span>
+<span id="cb11-28"><a href="cover_analysis.html#cb11-28" aria-hidden="true" tabindex="-1"></a>      , <span class="at">lwd =</span> <span class="cn">NA</span></span>
+<span id="cb11-29"><a href="cover_analysis.html#cb11-29" aria-hidden="true" tabindex="-1"></a>      , <span class="fu">aes</span>(<span class="at">fill =</span> crown_group_class_color)</span>
+<span id="cb11-30"><a href="cover_analysis.html#cb11-30" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb11-31"><a href="cover_analysis.html#cb11-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> harvests_post_lidar <span class="sc">%&gt;%</span></span>
+<span id="cb11-32"><a href="cover_analysis.html#cb11-32" aria-hidden="true" tabindex="-1"></a>            sf<span class="sc">::</span><span class="fu">st_union</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb11-33"><a href="cover_analysis.html#cb11-33" aria-hidden="true" tabindex="-1"></a>            sf<span class="sc">::</span><span class="fu">st_crop</span>(</span>
+<span id="cb11-34"><a href="cover_analysis.html#cb11-34" aria-hidden="true" tabindex="-1"></a>              rx_fire <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">slice</span>(<span class="dv">16</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-35"><a href="cover_analysis.html#cb11-35" aria-hidden="true" tabindex="-1"></a>              sf<span class="sc">::</span><span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">50</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-36"><a href="cover_analysis.html#cb11-36" aria-hidden="true" tabindex="-1"></a>              sf<span class="sc">::</span><span class="fu">st_bbox</span>()</span>
+<span id="cb11-37"><a href="cover_analysis.html#cb11-37" aria-hidden="true" tabindex="-1"></a>            ) <span class="sc">%&gt;%</span></span>
+<span id="cb11-38"><a href="cover_analysis.html#cb11-38" aria-hidden="true" tabindex="-1"></a>            sf<span class="sc">::</span><span class="fu">st_transform</span>(<span class="at">crs =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(naip_st))</span>
+<span id="cb11-39"><a href="cover_analysis.html#cb11-39" aria-hidden="true" tabindex="-1"></a>      , <span class="at">color =</span> <span class="st">&quot;blue&quot;</span></span>
+<span id="cb11-40"><a href="cover_analysis.html#cb11-40" aria-hidden="true" tabindex="-1"></a>      , <span class="at">lwd =</span> <span class="fl">1.5</span></span>
+<span id="cb11-41"><a href="cover_analysis.html#cb11-41" aria-hidden="true" tabindex="-1"></a>      , <span class="at">fill =</span> <span class="st">&quot;black&quot;</span></span>
+<span id="cb11-42"><a href="cover_analysis.html#cb11-42" aria-hidden="true" tabindex="-1"></a>      , <span class="at">alpha =</span> <span class="fl">0.4</span></span>
+<span id="cb11-43"><a href="cover_analysis.html#cb11-43" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb11-44"><a href="cover_analysis.html#cb11-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb11-45"><a href="cover_analysis.html#cb11-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb11-46"><a href="cover_analysis.html#cb11-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb11-47"><a href="cover_analysis.html#cb11-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb11-48"><a href="cover_analysis.html#cb11-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb11-49"><a href="cover_analysis.html#cb11-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb11-50"><a href="cover_analysis.html#cb11-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&quot;none&quot;</span></span>
+<span id="cb11-51"><a href="cover_analysis.html#cb11-51" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.direction =</span> <span class="st">&quot;horizontal&quot;</span></span>
+<span id="cb11-52"><a href="cover_analysis.html#cb11-52" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.title =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb11-53"><a href="cover_analysis.html#cb11-53" aria-hidden="true" tabindex="-1"></a>    , <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>)</span>
+<span id="cb11-54"><a href="cover_analysis.html#cb11-54" aria-hidden="true" tabindex="-1"></a>    , <span class="at">panel.border =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb11-55"><a href="cover_analysis.html#cb11-55" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-15-1.png" width="960" /></p>
+</div>
+</div>
+<div id="rx-fire-unit-contour" class="section level2 hasAnchor" number="4.8">
+<h2><span class="header-section-number">4.8</span> Rx Fire Unit Contour<a href="cover_analysis.html#rx-fire-unit-contour" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="cover_analysis.html#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb12-2"><a href="cover_analysis.html#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb12-3"><a href="cover_analysis.html#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># map of unit w/ contour</span></span>
+<span id="cb12-4"><a href="cover_analysis.html#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb12-5"><a href="cover_analysis.html#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="do">#########################################</span></span>
+<span id="cb12-6"><a href="cover_analysis.html#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb12-7"><a href="cover_analysis.html#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb12-8"><a href="cover_analysis.html#cb12-8" aria-hidden="true" tabindex="-1"></a>  stars<span class="sc">::</span><span class="fu">geom_stars</span>(<span class="at">data =</span> bhef_elev[</span>
+<span id="cb12-9"><a href="cover_analysis.html#cb12-9" aria-hidden="true" tabindex="-1"></a>    rx_fire <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">slice</span>(<span class="dv">3</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-10"><a href="cover_analysis.html#cb12-10" aria-hidden="true" tabindex="-1"></a>    sf<span class="sc">::</span><span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">50</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-11"><a href="cover_analysis.html#cb12-11" aria-hidden="true" tabindex="-1"></a>    sf<span class="sc">::</span><span class="fu">st_bbox</span>()</span>
+<span id="cb12-12"><a href="cover_analysis.html#cb12-12" aria-hidden="true" tabindex="-1"></a>  ]) <span class="sc">+</span></span>
+<span id="cb12-13"><a href="cover_analysis.html#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">&quot;viridis&quot;</span>, <span class="at">alpha =</span> <span class="fl">0.9</span>, <span class="at">na.value =</span> <span class="st">&quot;transparent&quot;</span>) <span class="sc">+</span></span>
+<span id="cb12-14"><a href="cover_analysis.html#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> bhef_contour <span class="sc">%&gt;%</span> </span>
+<span id="cb12-15"><a href="cover_analysis.html#cb12-15" aria-hidden="true" tabindex="-1"></a>    sf<span class="sc">::</span><span class="fu">st_crop</span>(</span>
+<span id="cb12-16"><a href="cover_analysis.html#cb12-16" aria-hidden="true" tabindex="-1"></a>      rx_fire <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">slice</span>(<span class="dv">3</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-17"><a href="cover_analysis.html#cb12-17" aria-hidden="true" tabindex="-1"></a>      sf<span class="sc">::</span><span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">50</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-18"><a href="cover_analysis.html#cb12-18" aria-hidden="true" tabindex="-1"></a>      sf<span class="sc">::</span><span class="fu">st_bbox</span>()</span>
+<span id="cb12-19"><a href="cover_analysis.html#cb12-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-20"><a href="cover_analysis.html#cb12-20" aria-hidden="true" tabindex="-1"></a>    , <span class="at">alpha =</span> <span class="dv">0</span></span>
+<span id="cb12-21"><a href="cover_analysis.html#cb12-21" aria-hidden="true" tabindex="-1"></a>    , <span class="at">lwd =</span> <span class="fl">0.5</span></span>
+<span id="cb12-22"><a href="cover_analysis.html#cb12-22" aria-hidden="true" tabindex="-1"></a>    , <span class="at">color =</span> <span class="st">&quot;gray30&quot;</span></span>
+<span id="cb12-23"><a href="cover_analysis.html#cb12-23" aria-hidden="true" tabindex="-1"></a>    , <span class="at">show.legend =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-24"><a href="cover_analysis.html#cb12-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb12-25"><a href="cover_analysis.html#cb12-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> rx_fire <span class="sc">%&gt;%</span></span>
+<span id="cb12-26"><a href="cover_analysis.html#cb12-26" aria-hidden="true" tabindex="-1"></a>          dplyr<span class="sc">::</span><span class="fu">slice</span>(<span class="dv">3</span>)</span>
+<span id="cb12-27"><a href="cover_analysis.html#cb12-27" aria-hidden="true" tabindex="-1"></a>      , <span class="at">alpha =</span> <span class="dv">0</span></span>
+<span id="cb12-28"><a href="cover_analysis.html#cb12-28" aria-hidden="true" tabindex="-1"></a>      , <span class="at">lwd =</span> <span class="fl">1.5</span></span>
+<span id="cb12-29"><a href="cover_analysis.html#cb12-29" aria-hidden="true" tabindex="-1"></a>      , <span class="at">color =</span> <span class="st">&quot;orangered&quot;</span></span>
+<span id="cb12-30"><a href="cover_analysis.html#cb12-30" aria-hidden="true" tabindex="-1"></a>      , <span class="at">show.legend =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-31"><a href="cover_analysis.html#cb12-31" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb12-32"><a href="cover_analysis.html#cb12-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb12-33"><a href="cover_analysis.html#cb12-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span></span>
+<span id="cb12-34"><a href="cover_analysis.html#cb12-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb12-35"><a href="cover_analysis.html#cb12-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb12-36"><a href="cover_analysis.html#cb12-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb12-37"><a href="cover_analysis.html#cb12-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb12-38"><a href="cover_analysis.html#cb12-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span></span>
+<span id="cb12-39"><a href="cover_analysis.html#cb12-39" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.direction =</span> <span class="st">&quot;horizontal&quot;</span></span>
+<span id="cb12-40"><a href="cover_analysis.html#cb12-40" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)</span>
+<span id="cb12-41"><a href="cover_analysis.html#cb12-41" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.box.margin =</span> <span class="fu">margin</span>(<span class="sc">-</span><span class="dv">21</span>,<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">0</span>)</span>
+<span id="cb12-42"><a href="cover_analysis.html#cb12-42" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>)</span>
+<span id="cb12-43"><a href="cover_analysis.html#cb12-43" aria-hidden="true" tabindex="-1"></a>    , <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>)</span>
+<span id="cb12-44"><a href="cover_analysis.html#cb12-44" aria-hidden="true" tabindex="-1"></a>    , <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>)</span>
+<span id="cb12-45"><a href="cover_analysis.html#cb12-45" aria-hidden="true" tabindex="-1"></a>    , <span class="at">panel.border =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb12-46"><a href="cover_analysis.html#cb12-46" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb12-47"><a href="cover_analysis.html#cb12-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(</span>
+<span id="cb12-48"><a href="cover_analysis.html#cb12-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">fill =</span> <span class="fu">guide_legend</span>(<span class="at">title=</span><span class="st">&quot;Elev. (m)&quot;</span>)</span>
+<span id="cb12-49"><a href="cover_analysis.html#cb12-49" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p><img src="bhef_rxfire_plan_files/figure-html/unnamed-chunk-16-1.png" width="960" /></p>
 
 </div>
 </div>
