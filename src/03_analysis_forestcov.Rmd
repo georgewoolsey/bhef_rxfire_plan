@@ -34,6 +34,19 @@ library(terra) # raster math
 sf::sf_use_s2(FALSE)
 ```
 
+## Set Contour Line Interval
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+#######################################################
+#######################################################
+# Set Contour Line Interval
+#######################################################
+#######################################################
+contour_int_m <- 5
+```
+
+
+
 ## Read Data
 
 [Vector data](#vector_data) and [forest cover data](#lidar_data) created in prior chapters.
@@ -88,7 +101,7 @@ bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
 ################################################
 ################################################
 # sequence by 5's to get 5m breaks list for contour
-seq_brk <- seq(0, 40000, 5)
+seq_brk <- seq(0, 40000, contour_int_m)
 # create contour data
 bhef_contour <- bhef_elev %>% 
   stars::st_contour(
@@ -96,8 +109,8 @@ bhef_contour <- bhef_elev %>%
     , contour_lines = FALSE
     , breaks = # classInt::classIntervals(na.omit(as.vector(x[[1]])))$brks
         seq_brk[
-          seq_brk > min(na.omit(as.vector(bhef_elev[[1]]))) - 5 
-          & seq_brk < max(na.omit(as.vector(bhef_elev[[1]]))) + 5
+          seq_brk > min(na.omit(as.vector(bhef_elev[[1]]))) - contour_int_m 
+          & seq_brk < max(na.omit(as.vector(bhef_elev[[1]]))) + contour_int_m
         ]
   )
 
@@ -625,164 +638,270 @@ gc()
 
 ### Rx Fire Unit Cover Class
 
+Create a plot function for cover class by fire unit.
+
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-# plot
-ggplot(data = rx_crown_sum %>% dplyr::filter(unit == (rx_fire %>% dplyr::slice(3))$unit)) + 
-  geom_col(aes(y = crown_group_class, x = area_ha, fill = crown_group_class), width = 0.7) +
-  scale_fill_manual(values = scale_fill_manual_values_fill)
-  geom_text(
-    aes(y = crown_group_class, x = area_ha + 2, label = scales::comma(area_ha, accuracy = 1))
-    , color = "black"
-    , size = 4
-    , fontface = "bold"
-    # , position = position_dodge(0.9)
-    , hjust = -0.1
-    , vjust = -0.5
-  ) +
-  geom_text(
-    aes(y = reorder(crown_group_class, area_ha), x = area_ha + 2, label = scales::percent(pct_area, accuracy = 1))
-    , color = "black"
-    , size = 3
-    # , position = position_dodge(0.9)
-    , hjust = -0.1
-    , vjust = 0.5
-  ) +
-  labs(
-      title = "BHEF Area (ha) by Crown Group Class"
-      , subtitle = "*Note: a tree is classified as cover >= 2m tall in 2017 based on lidar acquisition"
-    ) +
-  xlab("Area (ha)") +
-  ylab("") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_fill_viridis_c(alpha = 0.7, option = "cividis", direction = -1) +
-  theme_bw() +
-  theme(
-    legend.position = "none"
-    , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
-    , plot.subtitle = element_text(size=8, face="italic", color="gray20", margin = margin(0,0,0,0))
-    , axis.text.y = element_text(size = 10, face = "bold")
+plot_cover_class_bars <- function(my_unit){
+  (
+    # plot
+    ggplot(data = rx_crown_sum %>% dplyr::filter(unit == my_unit)) + 
+      geom_col(
+        aes(
+          y = reorder(crown_group_class, desc(crown_group_class))
+          , x = area_ha
+          , fill = crown_group_class
+        )
+        , width = 0.7
+      ) +
+      scale_fill_manual(values = scale_fill_manual_values_fill) +
+      geom_text(
+        aes(
+          y = reorder(crown_group_class, desc(crown_group_class))
+          , x = area_ha
+          , label = scales::comma(area_ha, accuracy = 1)
+        )
+        , color = "black"
+        , size = 4
+        , fontface = "bold"
+        # , position = position_dodge(0.9)
+        , hjust = -0.2
+        , vjust = -0.5
+      ) +
+      geom_text(
+        aes(
+          y = reorder(crown_group_class, desc(crown_group_class))
+          , x = area_ha
+          , label = scales::percent(pct_area, accuracy = 1)
+        )
+        , color = "black"
+        , size = 3
+        # , position = position_dodge(0.9)
+        , hjust = -0.2
+        , vjust = 0.5
+      ) +
+      labs(
+          title = paste0("Rx Fire Unit: ", my_unit)
+          , subtitle = "Area (ha) by Crown Group Class"
+        ) +
+      xlab("Area (ha)") +
+      ylab("") +
+      scale_x_continuous(labels = scales::comma) +
+      theme_bw() +
+      theme(
+        legend.position = "none"
+        , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=8, color="gray20", margin = margin(0,0,0,0))
+        , axis.text.y = element_text(size = 10, face = "bold")
+      )
   )
-
+}
+# print(plot_cover_class_bars(my_unit = rx_fire$unit[11]))
 ```
-
 
 ### Rx Fire Unit Cover Map
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-#########################################
-#########################################
-# map of unit w/ canopy
-#########################################
-#########################################
-ggplot() +
-  stars::geom_stars(data = naip_rgb[
-    rx_fire %>% dplyr::slice(3) %>% 
-    sf::st_buffer(dist = 50) %>% 
-    sf::st_transform(crs = sf::st_crs(naip_st)) %>% 
-    sf::st_bbox()
-  ]) +
-  scale_fill_identity() + # !!! don't take this out or RGB plot will kill your computer
-  geom_sf(data = rx_fire %>%
-          dplyr::slice(3) %>%
-          sf::st_transform(crs = sf::st_crs(naip_st))
-      , alpha = 0
-      , lwd = 1.5
-      , color = "orangered"
-  ) +
-  geom_sf(data = crowns_group %>%
-            sf::st_crop(
-              rx_fire %>% dplyr::slice(3) %>%
-              sf::st_buffer(dist = 50) %>%
-              sf::st_bbox()
-            ) %>%
-            sf::st_transform(crs = sf::st_crs(naip_st))
-      , lwd = NA
-      , aes(fill = crown_group_class_color)
-  ) +
-  geom_sf(data = harvests_post_lidar %>%
-            sf::st_union() %>% 
-            sf::st_crop(
-              rx_fire %>% dplyr::slice(3) %>%
-              sf::st_buffer(dist = 50) %>%
-              sf::st_bbox()
-            ) %>%
-            sf::st_transform(crs = sf::st_crs(naip_st))
-      , color = "blue"
-      , lwd = 1.5
-      , fill = "black"
-      , alpha = 0.4
-  ) +
-  xlab("") +
-  ylab("") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_bw() +
-  theme(
-    legend.position = "none"
-    , legend.direction = "horizontal"
-    , legend.title = element_blank()
-    , axis.text = element_text(size = 8)
-    , panel.border = element_blank()
+plot_cover_class_map <- function(my_unit){
+  (
+    #########################################
+    #########################################
+    # map of unit w/ canopy
+    #########################################
+    #########################################
+    ggplot() +
+      stars::geom_stars(data = naip_rgb[
+        rx_fire %>% dplyr::filter(unit == my_unit) %>% 
+        sf::st_buffer(dist = 50) %>% 
+        sf::st_transform(crs = sf::st_crs(naip_st)) %>% 
+        sf::st_bbox()
+      ]) +
+      scale_fill_identity() + # !!! don't take this out or RGB plot will kill your computer
+      geom_sf(data = rx_fire %>%
+              dplyr::filter(unit == my_unit) %>%
+              sf::st_transform(crs = sf::st_crs(naip_st))
+          , alpha = 0
+          , lwd = 1.5
+          , color = "orangered"
+      ) +
+      geom_sf(data = crowns_group %>%
+                sf::st_crop(
+                  rx_fire %>% dplyr::filter(unit == my_unit) %>%
+                  sf::st_buffer(dist = 50) %>%
+                  sf::st_bbox()
+                ) %>%
+                sf::st_transform(crs = sf::st_crs(naip_st))
+          , lwd = NA
+          , aes(fill = crown_group_class_color)
+      ) +
+      geom_sf(data = harvests_post_lidar %>%
+                sf::st_union() %>% 
+                sf::st_crop(
+                  rx_fire %>% dplyr::filter(unit == my_unit) %>%
+                  sf::st_buffer(dist = 50) %>%
+                  sf::st_bbox()
+                ) %>%
+                sf::st_transform(crs = sf::st_crs(naip_st))
+          , color = "blue"
+          , lwd = 1.5
+          , fill = "black"
+          , alpha = 0.4
+      ) +
+      labs(
+        title = paste0("Rx Fire Unit: "
+                       , my_unit
+                       , "   ("
+                       , scales::comma((rx_fire %>% dplyr::filter(unit == my_unit))$area_ha, accuracy = 1)
+                       , " ha | "
+                       , scales::comma((rx_fire %>% dplyr::filter(unit == my_unit))$area_m2/4047, accuracy = 1)
+                       , " ac)"
+                )
+        , subtitle = ifelse(
+          (rx_fire %>% dplyr::filter(unit == my_unit))$has_postlidar_harvest == 1
+          , "**This unit has post-lidar timber harvest (blue boundary)"
+          , ""
+        )
+      ) +
+      xlab("") +
+      ylab("") +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      theme_bw() +
+      theme(
+        legend.position = "none"
+        , legend.direction = "horizontal"
+        , legend.title = element_blank()
+        , axis.text = element_text(size = 8)
+        , panel.border = element_blank()
+        , plot.title = element_text(size = 14, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=9, face="bold.italic", color="blue", margin = margin(0,0,0,0))
+      )
   )
-
+}
+# print(plot_cover_class_map(my_unit = rx_fire$unit[11]))
 ```
 
-## Rx Fire Unit Contour
+### Rx Fire Unit Contour
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
-#########################################
-#########################################
-# map of unit w/ contour
-#########################################
-#########################################
-# plot
-ggplot() +
-  stars::geom_stars(data = bhef_elev[
-    rx_fire %>% dplyr::slice(3) %>% 
-    sf::st_buffer(dist = 50) %>% 
-    sf::st_bbox()
-  ]) +
-  scale_fill_viridis_c(option = "viridis", alpha = 0.9, na.value = "transparent") +
-  geom_sf(data = bhef_contour %>% 
-    sf::st_crop(
-      rx_fire %>% dplyr::slice(3) %>% 
-      sf::st_buffer(dist = 50) %>% 
-      sf::st_bbox()
-    )
-    , alpha = 0
-    , lwd = 0.5
-    , color = "gray30"
-    , show.legend = FALSE
-  ) +
-  geom_sf(data = rx_fire %>%
-          dplyr::slice(3)
-      , alpha = 0
-      , lwd = 1.5
-      , color = "orangered"
-      , show.legend = FALSE
-  ) +
-  xlab("") +
-  ylab("") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_bw() +
-  theme(
-    legend.position = "bottom"
-    , legend.direction = "horizontal"
-    , legend.margin = margin(0,0,0,0)
-    , legend.box.margin = margin(-21,0,2,0)
-    , legend.text = element_text(size = 7)
-    , legend.title = element_text(size = 7)
-    , axis.text = element_text(size = 8)
-    , panel.border = element_blank()
-  ) +
-  guides(
-    fill = guide_legend(title="Elev. (m)")
+plot_contour_map <- function(my_unit){
+  (
+    #########################################
+    #########################################
+    # map of unit w/ contour
+    #########################################
+    #########################################
+    # plot
+    ggplot() +
+      stars::geom_stars(data = bhef_elev[
+        rx_fire %>% dplyr::filter(unit == my_unit) %>% 
+        sf::st_buffer(dist = 50) %>% 
+        sf::st_bbox()
+      ]) +
+      scale_fill_viridis_c(option = "viridis", alpha = 0.9, na.value = "transparent") +
+      geom_sf(data = bhef_contour %>% 
+        sf::st_crop(
+          rx_fire %>% dplyr::filter(unit == my_unit) %>% 
+          sf::st_buffer(dist = 50) %>% 
+          sf::st_bbox()
+        )
+        , alpha = 0
+        , lwd = 0.5
+        , color = "gray30"
+        , show.legend = FALSE
+      ) +
+      geom_sf(data = rx_fire %>%
+              dplyr::filter(unit == my_unit)
+          , alpha = 0
+          , lwd = 1.5
+          , color = "orangered"
+          , show.legend = FALSE
+      ) +
+      labs(
+        subtitle = paste0("Contour lines are at "
+                          , as.character(contour_int_m)
+                          , "-m (~"
+                          , as.character(round(contour_int_m * 3.281, 1))
+                          , "-ft) intervals"
+          )
+      ) +
+      xlab("") +
+      ylab("") +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      theme_bw() +
+      theme(
+        legend.position = "bottom"
+        , legend.direction = "horizontal"
+        , legend.margin = margin(0,0,0,0)
+        , legend.box.margin = margin(-21,0,2,0)
+        , legend.text = element_text(size = 7)
+        , legend.title = element_text(size = 7)
+        , axis.text = element_text(size = 8)
+        , panel.border = element_blank()
+        , plot.subtitle = element_text(size=9, face="italic", color="gray20", margin = margin(0,0,0,0))
+      ) +
+      guides(
+        fill = guide_legend(title="Elev. (m)")
+      )
   )
-
+}
+# print(plot_contour_map(my_unit = rx_fire$unit[11]))
 ```
 
+### Rx Fire Unit Insert
 
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+plot_small_map <- function(my_unit){
+  (
+    ggplot() +
+      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
+      geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
+      geom_sf(
+        data = rx_fire %>% dplyr::filter(unit == my_unit)
+        , fill = "black"
+        , alpha = 0.2
+        , lwd = 2.5
+        , color = "orangered3"
+      ) +
+      geom_sf_label(
+        data = rx_fire
+        , aes(label = unit)
+        , label.size = NA
+        , alpha = 0
+        , size = 4
+      ) +
+      xlab("") +
+      ylab("") +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      theme_bw() +
+      theme(
+        axis.text = element_text(size = 8)
+        , panel.border = element_blank()
+      )
+
+  )
+}
+# print(plot_small_map(my_unit = rx_fire$unit[11]))
+```
+
+## Rx Fire Info Sheets
+
+Create info sheets for each Rx Fire unit.
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+p_class_map <- print(plot_cover_class_map(my_unit = rx_fire$unit[11]))
+p_class_bars <- print(plot_cover_class_bars(my_unit = rx_fire$unit[11]))
+p_contour_map <- print(plot_contour_map(my_unit = rx_fire$unit[11]))
+p_small_map <- print(plot_small_map(my_unit = rx_fire$unit[11]))
+
+
+ggarrange(p_class_map,                                                 # First row with scatter plot
+          ggarrange(bxp, dp, ncol = 2, labels = c("B", "C")), # Second row with box and dot plots
+          nrow = 2, 
+          labels = "A"                                        # Labels of the scatter plot
+          ) 
+```
 
 ```{r, warning=F, message=FALSE, eval=FALSE, include=FALSE, echo=FALSE, results='hide'}
 # plot
