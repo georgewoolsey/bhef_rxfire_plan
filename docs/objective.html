@@ -23,7 +23,7 @@
 <meta name="author" content="George Woolsey" />
 
 
-<meta name="date" content="2022-08-15" />
+<meta name="date" content="2022-08-19" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -172,7 +172,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="lidar_data.html#lidar_data" id="toc-lidar_data"><span class="toc-section-number">4</span> Analyze Lidar Data<span></span></a>
 <ul>
 <li><a href="lidar_data.html#overwrite-data-switch" id="toc-overwrite-data-switch"><span class="toc-section-number">4.1</span> Overwrite Data Switch<span></span></a></li>
-<li><a href="lidar_data.html#download-lidar-data-from-natl-map" id="toc-download-lidar-data-from-natl-map"><span class="toc-section-number">4.2</span> Download Lidar Data From Nat’l Map<span></span></a></li>
+<li><a href="lidar_data.html#download-data-from-natl-map" id="toc-download-data-from-natl-map"><span class="toc-section-number">4.2</span> Download Data From Nat’l Map<span></span></a></li>
 <li><a href="lidar_data.html#load-vector-data" id="toc-load-vector-data"><span class="toc-section-number">4.3</span> Load Vector Data<span></span></a></li>
 <li><a href="lidar_data.html#load-elevation-data" id="toc-load-elevation-data"><span class="toc-section-number">4.4</span> Load Elevation Data<span></span></a>
 <ul>
@@ -187,10 +187,36 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 <li><a href="lidar_data.html#lidar-derived-crown-groups-summary" id="toc-lidar-derived-crown-groups-summary"><span class="toc-section-number">4.6</span> Lidar-Derived Crown Groups Summary<span></span></a>
 <ul>
-<li><a href="lidar_data.html#crown-group-summary-statistics" id="toc-crown-group-summary-statistics"><span class="toc-section-number">4.6.1</span> Crown Group Summary Statistics<span></span></a></li>
+<li><a href="lidar_data.html#cg_sum" id="toc-cg_sum"><span class="toc-section-number">4.6.1</span> Crown Group Summary Statistics<span></span></a></li>
 </ul></li>
 <li><a href="lidar_data.html#map-crowns-and-rx-fire-area" id="toc-map-crowns-and-rx-fire-area"><span class="toc-section-number">4.7</span> Map Crowns and Rx Fire Area<span></span></a></li>
 <li><a href="lidar_data.html#write-out-data-1" id="toc-write-out-data-1"><span class="toc-section-number">4.8</span> Write Out Data<span></span></a></li>
+</ul></li>
+<li><a href="cover_analysis.html#cover_analysis" id="toc-cover_analysis"><span class="toc-section-number">5</span> Forest Cover Analysis<span></span></a>
+<ul>
+<li><a href="cover_analysis.html#set-contour-line-interval" id="toc-set-contour-line-interval"><span class="toc-section-number">5.1</span> Set Contour Line Interval<span></span></a></li>
+<li><a href="cover_analysis.html#read-data" id="toc-read-data"><span class="toc-section-number">5.2</span> Read Data<span></span></a>
+<ul>
+<li><a href="cover_analysis.html#data-preparation" id="toc-data-preparation"><span class="toc-section-number">5.2.1</span> Data Preparation<span></span></a></li>
+<li><a href="cover_analysis.html#read-naip-data" id="toc-read-naip-data"><span class="toc-section-number">5.2.2</span> Read NAIP Data<span></span></a></li>
+</ul></li>
+<li><a href="cover_analysis.html#post-lidar-acquisition-timber-harvests" id="toc-post-lidar-acquisition-timber-harvests"><span class="toc-section-number">5.3</span> Post-Lidar Acquisition Timber Harvests<span></span></a>
+<ul>
+<li><a href="cover_analysis.html#join-harvests-to-rx-fire-units" id="toc-join-harvests-to-rx-fire-units"><span class="toc-section-number">5.3.1</span> Join Harvests to Rx Fire Units<span></span></a></li>
+</ul></li>
+<li><a href="cover_analysis.html#forest-cover-summary" id="toc-forest-cover-summary"><span class="toc-section-number">5.4</span> Forest Cover Summary<span></span></a></li>
+<li><a href="cover_analysis.html#total-area-by-crown-group-class" id="toc-total-area-by-crown-group-class"><span class="toc-section-number">5.5</span> Total Area by Crown Group Class<span></span></a></li>
+<li><a href="cover_analysis.html#no-harvest-post-lidar-area-by-crown-group-class" id="toc-no-harvest-post-lidar-area-by-crown-group-class"><span class="toc-section-number">5.6</span> No Harvest Post-Lidar Area by Crown Group Class<span></span></a></li>
+<li><a href="cover_analysis.html#spatial-arrangement-by-crown-group-class" id="toc-spatial-arrangement-by-crown-group-class"><span class="toc-section-number">5.7</span> Spatial Arrangement by Crown Group Class<span></span></a></li>
+<li><a href="cover_analysis.html#rx-fire-unit-summary" id="toc-rx-fire-unit-summary"><span class="toc-section-number">5.8</span> Rx Fire Unit Summary<span></span></a>
+<ul>
+<li><a href="cover_analysis.html#rx-fire-unit-cover-class" id="toc-rx-fire-unit-cover-class"><span class="toc-section-number">5.8.1</span> Rx Fire Unit Cover Class<span></span></a></li>
+<li><a href="cover_analysis.html#rx-fire-unit-cover-map" id="toc-rx-fire-unit-cover-map"><span class="toc-section-number">5.8.2</span> Rx Fire Unit Cover Map<span></span></a></li>
+<li><a href="cover_analysis.html#rx-fire-unit-contour" id="toc-rx-fire-unit-contour"><span class="toc-section-number">5.8.3</span> Rx Fire Unit Contour<span></span></a></li>
+<li><a href="cover_analysis.html#rx-fire-unit-insert" id="toc-rx-fire-unit-insert"><span class="toc-section-number">5.8.4</span> Rx Fire Unit Insert<span></span></a></li>
+</ul></li>
+<li><a href="cover_analysis.html#rx-fire-info-sheets" id="toc-rx-fire-info-sheets"><span class="toc-section-number">5.9</span> Rx Fire Info Sheets<span></span></a></li>
+<li><a href="cover_analysis.html#rx-fire-info-packet" id="toc-rx-fire-info-packet"><span class="toc-section-number">5.10</span> Rx Fire Info Packet<span></span></a></li>
 </ul></li>
 </ul>
 
