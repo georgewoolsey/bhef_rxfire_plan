@@ -38,7 +38,7 @@ sf::sf_use_s2(FALSE)
 # WHICH TAKES A LONG TIME
 #######################################################
 #######################################################
-overwrite_it <- TRUE
+overwrite_it <- FALSE
 ```
 
 ## Download Data From Nat'l Map
@@ -800,11 +800,9 @@ kable(crowns_group %>% sf::st_set_geometry(NULL) %>%
   )
   , align=rep('c', 5)
 ) %>% 
-# kable_classic() %>%
 add_header_above(c(" " = 2, "Mean" = 6)) %>%
-kable_material(c("striped", "hover")) %>%
 kable_styling(font_size = 9) %>% 
-column_spec(1, bold = TRUE, width = "1em")
+column_spec(1, bold = TRUE, width = "5em")
 
 
 ```
