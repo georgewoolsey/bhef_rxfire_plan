@@ -1,6 +1,6 @@
-tab:unnamed-chunk-17
-tab:unnamed-chunk-39
-tab:unnamed-chunk-53
+tab:unnamed-chunk-18
+tab:unnamed-chunk-40
+tab:unnamed-chunk-55
 introduction
 objective
 vector_data
@@ -10,6 +10,7 @@ load-stem-map-data
 load-rx-fire-shapefile
 load-national-forests-shapefile
 load-experimental-forests-shapefile
+tsi
 harvests
 harvests-by-treatment-type
 join-research-plot-to-harvest
@@ -40,11 +41,11 @@ set-contour-line-interval
 read-data
 data-preparation
 read-naip-data
-post-lidar-acquisition-timber-harvests
-join-harvests-to-rx-fire-units
+post-lidar-acquisition-treatment
+join-treatments-to-rx-fire-units
 forest-cover-summary
 total-area-by-crown-group-class
-no-harvest-post-lidar-area-by-crown-group-class
+no-treatment-post-lidar-area-by-crown-group-class
 spatial-arrangement-by-crown-group-class
 rx-fire-unit-summary
 rx-fire-unit-cover-class

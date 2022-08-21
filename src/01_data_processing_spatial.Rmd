@@ -226,6 +226,55 @@ rx_fire %>% glimpse()
   
 ```
 
+
+## Load FACTS Timber Stand Improvement {#tsi}
+
+The Silviculture Timber Stand Improvement metadata file is available [here](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_SilvTSI.xml). 
+
+Limited to activities in the Black Hills National Forest for preliminary analysis. 
+
+[This appendix](https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/fseprd539041.pdf) includes a listing of all the active and inactive FACTS activity codes, as well as detailed descriptions of some of the codes.
+
+*Utilize data downloaded and created in Forest Management Impacts on Productivity [project](https://github.com/georgewoolsey/harvest_npp).* 
+
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# load boundary shapefile
+    tsi <- sf::st_read("../data/tsi.gpkg") %>%
+      rename_with(~ tolower(
+        gsub(" ", "_",
+           str_trim(gsub("\\s+", " ", .x))
+        )
+      ))
+    
+  #rename sf geom column
+    names(tsi)[names(tsi)==tolower(attr(tsi, "sf_column"))] = "geometry"
+    sf::st_geometry(tsi) = "geometry"
+  
+  # transform
+    tsi <- tsi %>% 
+      sf::st_transform(crs = sf::st_crs(research_plots))
+    
+  # spatial join BHEF
+    # bhef_tsi <- sf::st_intersection(
+    #     bhef_boundary %>% 
+    #        dplyr::select(name, station, hectares, lead_scientist) %>% 
+    #        dplyr::rename_with(~ paste0("exp_forest_", .), -geometry) %>% 
+    #       # there are some plots outside of BHEF boundary
+    #       sf::st_buffer(2500)
+    #     , tsi)
+    bhef_tsi <- sf::st_intersection(
+      # there are some plots outside of BHEF boundary
+        sf::st_union(
+            bhef_boundary
+            , sf::st_as_sfc(sf::st_bbox(research_plots)) %>% 
+                sf::st_transform(crs = sf::st_crs(research_plots)) 
+        ) %>% dplyr::select(geometry)
+        , tsi)
+
+```
+
+
 ## Load FACTS Timber Harvests {#harvests}
 
 Metadata file available [here](https://data.fs.usda.gov/geodata/edw/edw_resources/meta/S_USA.Activity_TimberHarvest.xml). 
@@ -569,6 +618,7 @@ mapview(stem_map
 # save cleaned data for reading to R later
 sf::st_write(forests_bhnf, "../data/forests_bhnf.gpkg", append = FALSE)
 sf::st_write(bhef_boundary, "../data/bhef_boundary.gpkg", append = FALSE)
+sf::st_write(bhef_tsi, "../data/bhef_tsi.gpkg", append = FALSE)
 sf::st_write(bhef_harvests, "../data/bhef_harvests.gpkg", append = FALSE)
 sf::st_write(research_plots, "../data/research_plots.gpkg", append = FALSE)
 sf::st_write(stem_map, "../data/stem_map.gpkg", append = FALSE)

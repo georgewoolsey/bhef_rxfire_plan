@@ -23,7 +23,7 @@
 <meta name="author" content="George Woolsey" />
 
 
-<meta name="date" content="2022-08-19" />
+<meta name="date" content="2022-08-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -157,17 +157,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="vector_data.html#load-rx-fire-shapefile" id="toc-load-rx-fire-shapefile"><span class="toc-section-number">3.4</span> Load Rx Fire shapefile<span></span></a></li>
 <li><a href="vector_data.html#load-national-forests-shapefile" id="toc-load-national-forests-shapefile"><span class="toc-section-number">3.5</span> Load National Forests shapefile<span></span></a></li>
 <li><a href="vector_data.html#load-experimental-forests-shapefile" id="toc-load-experimental-forests-shapefile"><span class="toc-section-number">3.6</span> Load Experimental Forests shapefile<span></span></a></li>
-<li><a href="vector_data.html#harvests" id="toc-harvests"><span class="toc-section-number">3.7</span> Load FACTS Timber Harvests<span></span></a>
+<li><a href="vector_data.html#tsi" id="toc-tsi"><span class="toc-section-number">3.7</span> Load FACTS Timber Stand Improvement<span></span></a></li>
+<li><a href="vector_data.html#harvests" id="toc-harvests"><span class="toc-section-number">3.8</span> Load FACTS Timber Harvests<span></span></a>
 <ul>
-<li><a href="vector_data.html#harvests-by-treatment-type" id="toc-harvests-by-treatment-type"><span class="toc-section-number">3.7.1</span> Harvests by treatment type<span></span></a></li>
+<li><a href="vector_data.html#harvests-by-treatment-type" id="toc-harvests-by-treatment-type"><span class="toc-section-number">3.8.1</span> Harvests by treatment type<span></span></a></li>
 </ul></li>
-<li><a href="vector_data.html#join-research-plot-to-harvest" id="toc-join-research-plot-to-harvest"><span class="toc-section-number">3.8</span> Join Research Plot to Harvest<span></span></a></li>
-<li><a href="vector_data.html#join-stem-map-to-research-plot-harvest" id="toc-join-stem-map-to-research-plot-harvest"><span class="toc-section-number">3.9</span> Join Stem Map to Research Plot &amp; Harvest<span></span></a>
+<li><a href="vector_data.html#join-research-plot-to-harvest" id="toc-join-research-plot-to-harvest"><span class="toc-section-number">3.9</span> Join Research Plot to Harvest<span></span></a></li>
+<li><a href="vector_data.html#join-stem-map-to-research-plot-harvest" id="toc-join-stem-map-to-research-plot-harvest"><span class="toc-section-number">3.10</span> Join Stem Map to Research Plot &amp; Harvest<span></span></a>
 <ul>
-<li><a href="vector_data.html#stem-map-descriptive-statistics." id="toc-stem-map-descriptive-statistics."><span class="toc-section-number">3.9.1</span> Stem Map Descriptive statistics.<span></span></a></li>
+<li><a href="vector_data.html#stem-map-descriptive-statistics." id="toc-stem-map-descriptive-statistics."><span class="toc-section-number">3.10.1</span> Stem Map Descriptive statistics.<span></span></a></li>
 </ul></li>
-<li><a href="vector_data.html#map-harvests-research-plots-stem-map" id="toc-map-harvests-research-plots-stem-map"><span class="toc-section-number">3.10</span> Map Harvests, Research Plots, Stem Map<span></span></a></li>
-<li><a href="vector_data.html#write-out-data" id="toc-write-out-data"><span class="toc-section-number">3.11</span> Write Out Data<span></span></a></li>
+<li><a href="vector_data.html#map-harvests-research-plots-stem-map" id="toc-map-harvests-research-plots-stem-map"><span class="toc-section-number">3.11</span> Map Harvests, Research Plots, Stem Map<span></span></a></li>
+<li><a href="vector_data.html#write-out-data" id="toc-write-out-data"><span class="toc-section-number">3.12</span> Write Out Data<span></span></a></li>
 </ul></li>
 <li><a href="lidar_data.html#lidar_data" id="toc-lidar_data"><span class="toc-section-number">4</span> Analyze Lidar Data<span></span></a>
 <ul>
@@ -200,13 +201,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="cover_analysis.html#data-preparation" id="toc-data-preparation"><span class="toc-section-number">5.2.1</span> Data Preparation<span></span></a></li>
 <li><a href="cover_analysis.html#read-naip-data" id="toc-read-naip-data"><span class="toc-section-number">5.2.2</span> Read NAIP Data<span></span></a></li>
 </ul></li>
-<li><a href="cover_analysis.html#post-lidar-acquisition-timber-harvests" id="toc-post-lidar-acquisition-timber-harvests"><span class="toc-section-number">5.3</span> Post-Lidar Acquisition Timber Harvests<span></span></a>
+<li><a href="cover_analysis.html#post-lidar-acquisition-treatment" id="toc-post-lidar-acquisition-treatment"><span class="toc-section-number">5.3</span> Post-Lidar Acquisition Treatment<span></span></a>
 <ul>
-<li><a href="cover_analysis.html#join-harvests-to-rx-fire-units" id="toc-join-harvests-to-rx-fire-units"><span class="toc-section-number">5.3.1</span> Join Harvests to Rx Fire Units<span></span></a></li>
+<li><a href="cover_analysis.html#join-treatments-to-rx-fire-units" id="toc-join-treatments-to-rx-fire-units"><span class="toc-section-number">5.3.1</span> Join Treatments to Rx Fire Units<span></span></a></li>
 </ul></li>
 <li><a href="cover_analysis.html#forest-cover-summary" id="toc-forest-cover-summary"><span class="toc-section-number">5.4</span> Forest Cover Summary<span></span></a></li>
 <li><a href="cover_analysis.html#total-area-by-crown-group-class" id="toc-total-area-by-crown-group-class"><span class="toc-section-number">5.5</span> Total Area by Crown Group Class<span></span></a></li>
-<li><a href="cover_analysis.html#no-harvest-post-lidar-area-by-crown-group-class" id="toc-no-harvest-post-lidar-area-by-crown-group-class"><span class="toc-section-number">5.6</span> No Harvest Post-Lidar Area by Crown Group Class<span></span></a></li>
+<li><a href="cover_analysis.html#no-treatment-post-lidar-area-by-crown-group-class" id="toc-no-treatment-post-lidar-area-by-crown-group-class"><span class="toc-section-number">5.6</span> No Treatment Post-Lidar Area by Crown Group Class<span></span></a></li>
 <li><a href="cover_analysis.html#spatial-arrangement-by-crown-group-class" id="toc-spatial-arrangement-by-crown-group-class"><span class="toc-section-number">5.7</span> Spatial Arrangement by Crown Group Class<span></span></a></li>
 <li><a href="cover_analysis.html#rx-fire-unit-summary" id="toc-rx-fire-unit-summary"><span class="toc-section-number">5.8</span> Rx Fire Unit Summary<span></span></a>
 <ul>
@@ -238,7 +239,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="header">
 <h1 class="title">Black Hills Experimental Forest Prescribed Fire Planning</h1>
 <p class="author"><em>George Woolsey</em></p>
-<p class="date"><em>2022-08-19</em></p>
+<p class="date"><em>2022-08-21</em></p>
 </div>
 <div id="introduction" class="section level1 hasAnchor" number="1">
 <h1><span class="header-section-number">Chapter 1</span> Introduction<a href="index.html#introduction" class="anchor-section" aria-label="Anchor link to header"></a></h1>

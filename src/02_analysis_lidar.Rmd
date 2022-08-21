@@ -260,6 +260,7 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 ######################################################
   # If several files are read at once the returned LAS object is considered as one LAS file.
   # las <- lidR::readLAS(lazs[2], select = "xyz") %>% # load XYZ only
+    # lazs[1:7] # "USGS_LPC_SD_NRCS_Fugro_B2_2017_13TFJ080890_LAS_2019.laz"
   las <- lidR::readLAS(lazs, select = "xyz") %>% 
      sf::st_transform(crs = sf::st_crs(bhef_elev))
   # lidR::las_check(las)
@@ -713,7 +714,7 @@ gc()
 
 Tree classes are based on [Steel et al. 2021](https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/1365-2745.13764?casa_token=ob4t10qIRrsAAAAA:qYNA0_uawnsPC4EJ6O5Jz2GCeaA2BXNOUUJBIVFiS2ic-Pm9L5FafLhVtIWg4flYGsEsJgWgMNuPx0w). Height thresholds were used to define canopy (>8 m), subcanopy (2–8 m) and understory (1–2 m). Crown groups are defined by the number of trees in a crown group and the composition of canopy and subcanopy trees in the group:
 
-  * **Individual Tree** : single tree (canopy or subcanopy) without interlocking crown
+  * **Individual Tree** : Single tree >= 2m tall in 2017 (canopy or subcanopy) without interlocking crown
   
   * **Small Group - Canopy** : 2-10 trees with interlocking crowns where 75% or more of the trees are canopy (>8 m)
   

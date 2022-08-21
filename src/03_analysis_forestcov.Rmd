@@ -50,6 +50,7 @@ contour_int_m <- 5
 forests_bhnf <- sf::st_read("../data/forests_bhnf.gpkg")
 bhef_boundary <- sf::st_read("../data/bhef_boundary.gpkg")
 bhef_harvests <- sf::st_read("../data/bhef_harvests.gpkg")
+bhef_tsi <- sf::st_read("../data/bhef_tsi.gpkg")
 research_plots <- sf::st_read("../data/research_plots.gpkg")
 stem_map <- sf::st_read("../data/stem_map.gpkg")
 rx_fire <- sf::st_read("../data/rx_fire.gpkg")
@@ -77,7 +78,7 @@ bhef_elev <- stars::read_stars("../data/bhef_elev.tif")
 # add colors to the crowns group
 ################################################
 ################################################
-  all_classes <- c(sort(unique(crowns_group$crown_group_class)), "Non-Tree Cover", "Post-Lidar Harvest")
+  all_classes <- c(sort(unique(crowns_group$crown_group_class)), "Non-Tree Cover", "Post-Lidar Treatment")
   col_data <- data.frame(
     crown_group_class = all_classes
     , crown_group_class_color = c(
@@ -151,15 +152,47 @@ naip_rgb <- stars::st_rgb(
 )
 ```
 
-## Post-Lidar Acquisition Timber Harvests
+## Post-Lidar Acquisition Treatment
 
-Lidar data was collected in 2017. Spatially identify areas within BHEF where timber harvest (not including TSI) treatments occurred in 2017 or later. 
+Lidar data was collected in 2017. Spatially identify areas within BHEF where timber harvest and TSI treatments occurred in 2017 or later. 
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # find harvests after lidar collection
-harvests_post_lidar <- bhef_harvests %>% 
-  dplyr::filter(year_id >= 2017) %>% 
-  sf::st_intersection(bhef_boundary)
+temp_harvests <- bhef_harvests %>% 
+  dplyr::filter(year_id >= 2017) %>%
+  sf::st_intersection(bhef_boundary) %>% 
+  sf::st_union() %>% 
+  sf::st_as_sf() %>% 
+  dplyr::mutate(temp_var = "harvests") %>% 
+  dplyr::select(temp_var)
+
+temp_tsi <- bhef_tsi %>% 
+  dplyr::filter(year_id >= 2017) %>%
+  sf::st_intersection(bhef_boundary) %>% 
+  sf::st_union() %>% 
+  sf::st_as_sf() %>% 
+  dplyr::mutate(temp_var = "tsi") %>% 
+  dplyr::select(temp_var)
+
+temp_i <- sf::st_intersection(temp_harvests, temp_tsi) %>%
+  sf::st_union() %>% 
+  sf::st_as_sf() %>% 
+  dplyr::mutate(treatment_type_grp = "Harvest & TSI") %>% 
+  dplyr::select(treatment_type_grp)
+
+harvests_post_lidar <- rbind(
+  temp_i
+  , sf::st_difference(temp_harvests, temp_i) %>% 
+    sf::st_union() %>%
+    sf::st_as_sf() %>% 
+    dplyr::mutate(treatment_type_grp = "Harvest") %>% 
+    dplyr::select(treatment_type_grp)
+  , sf::st_difference(temp_tsi, temp_i) %>% 
+    sf::st_union() %>% 
+    sf::st_as_sf() %>% 
+    dplyr::mutate(treatment_type_grp = "TSI") %>% 
+    dplyr::select(treatment_type_grp)
+)
 # write data
 sf::st_write(harvests_post_lidar, "../data/harvests_post_lidar.gpkg", append = FALSE)
 
@@ -176,17 +209,17 @@ ggplot() +
     , alpha = 0
     , size = 3
   ) +
-  geom_sf_label(data = harvests_post_lidar, aes(label = year_id)
-    , label.size = NA
-    , alpha = 0
-    , size = 2.5
-  ) +
+  # geom_sf_label(data = harvests_post_lidar, aes(label = year_id)
+  #   , label.size = NA
+  #   , alpha = 0
+  #   , size = 2.5
+  # ) +
   scale_fill_viridis_d(option = "viridis", alpha = 0.8) + 
   labs(
-    title = "BHEF Post-Lidar Acquisition Timber Harvests"
+    title = "BHEF Post-Lidar Acquisition Timber Harvests & TSI"
     , subtitle = paste0("Rx fire units")
     , caption = paste0(
-      "*Percent of BHEF Area Harvested Post-Lidar: "
+      "*Percent of BHEF Area Treated Post-Lidar: "
       , scales::percent(
         as.numeric(sum(sf::st_area(harvests_post_lidar))) / as.numeric(sum(sf::st_area(bhef_boundary)))
         , accuracy = 0.1
@@ -222,9 +255,14 @@ file.remove("../data/pdf/post_lidar_bhef_tmbrhrvst.pdf")
 
 
 There have been **`r scales::comma(as.numeric(sum(sf::st_area(harvests_post_lidar)))/10000, accuracy = 1)` hectares** in BHEF with timber harvest treatments completed after the lidar acquisition in 2017. This represents **`r scales::percent(as.numeric(sum(sf::st_area(harvests_post_lidar))) / as.numeric(sum(sf::st_area(bhef_boundary))), accuracy = 0.1)`** of the total BHEF area (**`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/10000, accuracy = 1)` hectares**).
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(temp_harvests, temp_tsi, temp_i)
+gc()
+```
       
 
-### Join Harvests to Rx Fire Units
+### Join Treatments to Rx Fire Units
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 rx_fire <- rx_fire %>% 
@@ -232,7 +270,7 @@ rx_fire <- rx_fire %>%
     rx_fire %>% 
       dplyr::select(unit) %>% 
       sf::st_intersection(
-        sf::st_union(harvests_post_lidar %>% dplyr::select(nffid))
+        sf::st_union(harvests_post_lidar)
       ) %>% 
       dplyr::mutate(postlidar_harvest_area_m2 = as.numeric(sf::st_area(.))) %>% 
       sf::st_set_geometry(NULL) %>% 
@@ -272,7 +310,7 @@ ggplot(data = rx_fire) +
     , vjust = 0.1
   ) +
   labs(
-      title = "Percent of Rx Fire Unit Area with Timber Harvest Post-Lidar Acquisition"
+      title = "Percent of Rx Fire Unit Area with Treatment Post-Lidar Acquisition"
       # , subtitle = "within BHEF boundary and bounding box of research plot area"
     ) +
   xlab("Area (ha)") +
@@ -327,7 +365,7 @@ crown_group_class <- c(
   , "Continuous - Subcanopy"
   , "Continuous - Mixed"
   , "Non-Tree Cover"
-  , "Post-Lidar Harvest"
+  , "Post-Lidar Treatment"
 )
 description <- c(
   "Single tree >= 2m tall in 2017 (canopy or subcanopy) without interlocking crown"
@@ -341,7 +379,7 @@ description <- c(
   , ">40 trees with interlocking crowns where 75% or more of the trees are subcanopy (2-8 m)"
   , ">40 trees with interlocking crowns with neither canopy nor subcanopy comprising >75% of trees"
   , "Any ground cover (vegetation or non-vegetation) less than 2 m in height in 2017"
-  , "Timber harvest occured after the BHEF Lidar data acquisition in 2017 (based on FACTS)"
+  , "Timber harvest and/or TSI occured after the BHEF Lidar data acquisition in 2017 (based on FACTS)"
 )
 temp_dta <- data.frame(
   Classification = crown_group_class
@@ -377,8 +415,6 @@ gc()
 
 
 ## Total Area by Crown Group Class
-
-The total area of the BHEF is approximately **`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/10000, accuracy = 1)` hectares (`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/4047, accuracy = 1)` acres)**. 
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # set up data
@@ -449,14 +485,16 @@ ggplot2::ggsave(
 
 ```
 
+The total area of the BHEF is approximately **`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/10000, accuracy = 1)` hectares (`r scales::comma( as.numeric(sf::st_area(bhef_boundary))/4047, accuracy = 1)` acres)**. 
+
 ```{r, warning=F, message=F, echo=FALSE, include=FALSE}
 remove(bhef_area_ha, forestcov_area_ha, non_forestcov_area_ha, temp_dta)
 gc()
 ```
 
-## No Harvest Post-Lidar Area by Crown Group Class
+## No Treatment Post-Lidar Area by Crown Group Class
 
-The total area of the BHEF which has *not* been harvested after the 2017 lidar acquisition is approximately **`r scales::comma(as.numeric(sum(sf::st_area(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar)))))/10000, accuracy = 1)` hectares (`r scales::comma( as.numeric(sum(sf::st_area(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar)))))/4047, accuracy = 1)` acres)**. 
+Remove area that has been treated (i.e. harvest and/or TSI) from BHEF area and identify cover class distribution.
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # set up data
@@ -500,7 +538,7 @@ ggplot(data = crowns_group_area_sum_woharv) +
     , vjust = 0.5
   ) +
   labs(
-      title = "No Harvest Post-Lidar BHEF Area (ha) by Crown Group Class"
+      title = "No Treatment Post-Lidar BHEF Area (ha) by Crown Group Class"
       , subtitle = "*Note: a tree is classified as cover >= 2m tall in 2017 based on lidar acquisition"
     ) +
   xlab("Area (ha)") +
@@ -525,6 +563,8 @@ ggplot2::ggsave(
   )
 
 ```
+
+The total area of the BHEF which has *not* been treated (i.e. harvest and/or TSI) after the 2017 lidar acquisition is approximately **`r scales::comma(as.numeric(sum(sf::st_area(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar)))))/10000, accuracy = 1)` hectares (`r scales::comma( as.numeric(sum(sf::st_area(sf::st_difference(bhef_boundary, sf::st_union(harvests_post_lidar)))))/4047, accuracy = 1)` acres)**. 
 
 ```{r, warning=F, message=F, echo=FALSE, include=FALSE}
 remove(bhef_area_ha, forestcov_area_ha, non_forestcov_area_ha, temp_dta)
@@ -604,7 +644,7 @@ for (i in 1:length(my_classes)) {
 temp_rx_crown <- rx_fire %>% 
   dplyr::select(unit) %>% 
   sf::st_difference(
-    sf::st_union(harvests_post_lidar %>% dplyr::select(nffid))
+    sf::st_union(harvests_post_lidar)
   ) %>%
   sf::st_intersection(
     crowns_group %>% dplyr::select(crown_group_class)
@@ -620,7 +660,7 @@ rx_crown_sum <- rx_fire %>%
   sf::st_set_geometry(NULL) %>% 
   dplyr::select(unit, postlidar_harvest_area_m2) %>% 
   dplyr::rename(area_m2 = postlidar_harvest_area_m2) %>% 
-  dplyr::mutate(crown_group_class = "Post-Lidar Harvest") %>% 
+  dplyr::mutate(crown_group_class = "Post-Lidar Treatment") %>% 
   dplyr::relocate(names(temp_rx_crown)) %>% 
   dplyr::bind_rows(temp_rx_crown) %>% 
   dplyr::left_join(
@@ -656,13 +696,13 @@ rx_crown_sum <- rx_crown_sum %>%
 rx_crown_sum %>% 
   dplyr::mutate(
     cover = dplyr::case_when(
-      crown_group_class %in% c("Non-Tree Cover", "Post-Lidar Harvest") ~ crown_group_class
+      crown_group_class %in% c("Non-Tree Cover", "Post-Lidar Treatment") ~ crown_group_class
       , startsWith(crown_group_class, "Continuous") ~ "Continuous Tree Cover"
       , TRUE ~ "Sm/Med Grp. & Indiv. Tree Cover"
     )
     , cover_num = dplyr::case_when(
       crown_group_class == "Non-Tree Cover" ~ 4
-      , crown_group_class == "Post-Lidar Harvest" ~ 3
+      , crown_group_class == "Post-Lidar Treatment" ~ 3
       , startsWith(crown_group_class, "Continuous") ~ 1
       , TRUE ~ 2
     )
@@ -846,7 +886,7 @@ plot_cover_class_map <- function(my_unit){
           , aes(fill = crown_group_class_color)
       ) +
       geom_sf(data = harvests_post_lidar %>%
-                sf::st_union() %>% 
+                # sf::st_union() %>% 
                 sf::st_crop(
                   rx_fire %>% dplyr::filter(unit == my_unit) %>%
                   sf::st_buffer(dist = 50) %>%
@@ -855,7 +895,7 @@ plot_cover_class_map <- function(my_unit){
                 sf::st_transform(crs = sf::st_crs(naip_st))
           , color = "blue"
           , lwd = 1.5
-          , fill = (col_data %>% dplyr::filter(crown_group_class == "Post-Lidar Harvest"))$crown_group_class_color
+          , fill = (col_data %>% dplyr::filter(crown_group_class == "Post-Lidar Treatment"))$crown_group_class_color
           # , alpha = 0.4
       ) +
       labs(
@@ -869,7 +909,7 @@ plot_cover_class_map <- function(my_unit){
                 )
         , subtitle = ifelse(
           (rx_fire %>% dplyr::filter(unit == my_unit))$has_postlidar_harvest == 1
-          , "**This unit has post-lidar timber harvest (blue boundary)"
+          , "**This unit has post-lidar treatment (blue boundary)"
           , ""
         )
       ) +
@@ -989,7 +1029,7 @@ plot_small_map <- function(my_unit){
       scale_y_continuous(expand = c(0, 0)) +
       theme_bw() +
       theme(
-        axis.text = element_text(size = 5)
+        axis.text = element_text(size = 5.5)
         , axis.text.x = element_text(angle = 35)
         , panel.border = element_blank()
       )
