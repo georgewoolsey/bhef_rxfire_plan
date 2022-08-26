@@ -135,6 +135,7 @@ bhef_harvests <- sf::st_read("../data/bhef_harvests.gpkg")
 research_plots <- sf::st_read("../data/research_plots.gpkg")
 stem_map <- sf::st_read("../data/stem_map.gpkg")
 rx_fire <- sf::st_read("../data/rx_fire.gpkg")
+# read files needed for visuals if not overwrite
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   crowns_group <- sf::st_read("../data/crowns_group.gpkg")
 }
@@ -164,17 +165,17 @@ The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to ob
       # tifs <- list.files("../data/dem/", pattern = "\\.tif$", full.names = TRUE)
       # 
       # newgrid <- bhef_boundary %>%
-      #   sf::st_buffer(dist = 10000) %>% 
+      #   sf::st_buffer(dist = 10000) %>%
       #   sf::st_bbox() %>%
       #   stars::st_as_stars(dx = 1, dy = 1)
       #   # stars::st_as_stars()
-      #   
+      # 
       # # read files
       # for(i in 1:length(tifs)){
       #   f_nm <- paste0("elev_", i)
       #   assign(f_nm,
-      #         stars::read_stars(tifs[i]) %>% 
-      #           stars::st_warp(newgrid) %>% 
+      #         stars::read_stars(tifs[i]) %>%
+      #           stars::st_warp(newgrid) %>%
       #           setNames("elev")
       #           # sf::st_transform(crs = sf::st_crs(bhef_boundary))
       #   )
@@ -182,7 +183,7 @@ The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to ob
       # # mosaic together !!!!!!!!!!!!!!! NEED TO REMOVE HARD-CODING OF OBJECT NAMES
       # elev <- stars::st_mosaic(elev_1, elev_2, elev_3, elev_4)
       # remove(list = ls(pattern = "elev_") )
-      # bhef_elev <- elev[sf::st_buffer(bhef_boundary %>% dplyr::select(name), dist = 1000)]
+      # bhef_elev <- elev[sf::st_buffer(bhef_boundary, dist = 1000)]
     #######################################################
     # not 1 m dem
     #######################################################
@@ -238,31 +239,63 @@ Use the `lidR` package for manipulating and visualizing point cloud data. See th
 if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
   print("Proceeding to next section without processing or overwriting data...")
 }else{
-# list laz files
-  lazs <- sort(list.files("../data/lidar/", pattern = "\\.laz$", full.names = TRUE), decreasing = FALSE)
-# change projection of DEM 
-  # # creating a new regular grid in a new CRS
-  # newgrid <- bhef_boundary %>% 
-  #   sf::st_transform(crs = sf::st_crs( lidR::readLAS(lazs[1], select = "xyz") )) %>% 
-  #   sf::st_bbox() %>%
-  #   stars::st_as_stars()
-  # # set up old grid to warp back
-  # oldgrid <- bhef_boundary %>% 
-  #   sf::st_bbox() %>%
-  #   stars::st_as_stars()
-  # # warping the old raster to the new grid
-  # bhef_elev_reproj <- bhef_elev %>%
-  #   stars::st_warp(newgrid)
-  
-  # bhef_elev_reproj <- bhef_elev %>% stars::st_warp(crs = sf::st_crs( lidR::readLAS(lazs[1], select = "xyz") ))
+
+######################################################
+# transform laz files
+######################################################
+  # create directory for transformed data
+    old_dir <- "../data/lidar/"
+    new_dir <- "../data/lidar/transform/"
+    if(dir.exists(new_dir)==FALSE){
+      dir.create(new_dir)
+    }
+  # determine non transformed files
+    lazs_trans <- sort(list.files(new_dir, pattern = "\\.laz$", full.names = FALSE))
+    lazs_orig <- sort(list.files(old_dir, pattern = "\\.laz$", full.names = FALSE))
+    non_trans <- lazs_orig[!lazs_orig %in% lazs_trans]
+  # loop to transform and write
+    if(length(non_trans) > 0){
+      for (i in 1:length(non_trans)) {
+        # read
+        temp_laz <- lidR::readLAS(
+            paste0(old_dir, non_trans[i])
+            , select = "xyz"
+          ) %>% 
+          sf::st_transform(crs = sf::st_crs(bhef_elev))
+        # write
+        lidR::writeLAS(
+          temp_laz
+          , paste0(new_dir, non_trans[i])
+        )  
+        remove(temp_laz)
+      }
+    }
+    remove(temp_laz, lazs_trans, lazs_orig, non_trans)
+    gc()
 ######################################################
 # read laz files
 ######################################################
+  # list laz files
+    lazs <- sort(list.files(new_dir, pattern = "\\.laz$", full.names = TRUE), decreasing = FALSE)
+    # change projection of DEM 
+      # # creating a new regular grid in a new CRS
+      # newgrid <- bhef_boundary %>% 
+      #   sf::st_transform(crs = sf::st_crs( lidR::readLAS(lazs[1], select = "xyz") )) %>% 
+      #   sf::st_bbox() %>%
+      #   stars::st_as_stars()
+      # # set up old grid to warp back
+      # oldgrid <- bhef_boundary %>% 
+      #   sf::st_bbox() %>%
+      #   stars::st_as_stars()
+      # # warping the old raster to the new grid
+      # bhef_elev_reproj <- bhef_elev %>%
+      #   stars::st_warp(newgrid)
+      
+      # bhef_elev_reproj <- bhef_elev %>% stars::st_warp(crs = sf::st_crs( lidR::readLAS(lazs[1], select = "xyz") ))
   # If several files are read at once the returned LAS object is considered as one LAS file.
   # las <- lidR::readLAS(lazs[2], select = "xyz") %>% # load XYZ only
-    # lazs[1:7] # "USGS_LPC_SD_NRCS_Fugro_B2_2017_13TFJ080890_LAS_2019.laz"
-  las <- lidR::readLAS(lazs, select = "xyz") %>% 
-     sf::st_transform(crs = sf::st_crs(bhef_elev))
+  las <- lidR::readLAS(lazs, select = "xyz")
+     # sf::st_transform(crs = sf::st_crs(bhef_elev))
   # lidR::las_check(las)
   # remove duplicate points
   las <- lidR::filter_duplicates(las)
@@ -317,6 +350,8 @@ if(file.exists("../data/crowns_group.gpkg") == TRUE & overwrite_it == FALSE){
 #   , th = lidR::util_makeZhangParam()$th
 #   )
 # )
+
+    
 }
 ```
 
@@ -879,10 +914,12 @@ if(overwrite_it == FALSE){
 # save cleaned data for reading to R later
 sf::st_write(crowns_group, "../data/crowns_group.gpkg", append = FALSE)
 sf::st_write(tree_tops, "../data/tree_tops.gpkg", append = FALSE)
+sf::st_write(crowns_sf, "../data/crowns_sf.gpkg", append = FALSE)
 stars::write_stars(chm, "../data/chm.tif", append = FALSE)
 stars::write_stars(crowns_st, "../data/crowns_st.tif", append = FALSE)
 }
 ```
+
 
 
 
