@@ -1,0 +1,221 @@
+# Soil Data {#soil_data}
+
+```{r, include=FALSE, warning=F, message=F}
+# data mgmt
+library(tidyverse)
+library(lubridate)
+# visualization
+library(RColorBrewer)
+library(scales)
+library(ggrepel)
+library(viridis)
+library(kableExtra)
+# spatial
+library(sf)
+library(lwgeom) 
+library(mapview) #Interactive maps
+library(leafpop) #map html popup
+# soil data
+library(FedData)
+```
+
+```{r, warning=F, message=F, results='hide'}
+# turn off the s2 processing 
+## https://stackoverflow.com/questions/68478179/how-to-resolve-spherical-geometry-failures-when-joining-spatial-data
+sf::sf_use_s2(FALSE)
+```
+
+## Load Experimental Forests shapefile
+
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
+# load boundary shapefile
+  # extract file name
+    f_path <- paste0("../data", "/", "S_USA.Experimental_Area_Boundaries.gdb", "/")
+    dta_nm <- paste(f_path
+      , list.files(f_path, pattern = "\\.gdb$")[1]
+      , sep = "/"
+    )
+    lyr_nms <- sf::st_layers(dsn = dta_nm)$name
+    lyr <- lyr_nms[grep("Experimental_Area_Boundaries", lyr_nms)][1]
+  # load in data
+    exp_forests <- sf::st_read(
+        dsn = dta_nm
+        , layer = lyr
+      ) %>%
+      rename_with(~ tolower(
+        gsub(" ", "_",
+           str_trim(gsub("\\s+", " ", .x))
+        )
+      ))
+    
+  #rename sf geom column
+    names(exp_forests)[names(exp_forests)==tolower(attr(exp_forests, "sf_column"))] = "geometry"
+    sf::st_geometry(exp_forests) = "geometry"
+  # export shp file
+    bhef_boundary <- exp_forests |> 
+        dplyr::filter(name=="Black Hills Experimental Forest")
+    if(file.exists("../data/BHEF.shp")==FALSE){
+      bhef_boundary |>
+        sf::st_write("../data/BHEF.shp")
+    }
+    transform_crs <- sf::st_crs(exp_forests)
+```
+
+```{r, warning=F, message=F, echo=FALSE, include=FALSE}
+remove(list = ls()[!ls() %in% c("exp_forests", "bhef_boundary","transform_crs")])
+gc()
+```
+
+## Soils Data
+
+Download soils data from [Web Soil Survey](https://websoilsurvey.nrcs.usda.gov/app/) which provides soil data and information produced by the National Cooperative Soil Survey. It is operated by the USDA Natural Resources Conservation Service (NRCS) and provides access to the largest natural resource information system in the world.
+
+*Exports from the Soil Data Mart are delivered in what is referred to as Soil Survey Geographic Database (SSURGO) format. The following documents, diagrams, and reports describe the SSURGO standard and STATSGO2, as well as the tools and procedures that are necessary to effectively use this data.* [METADATA HERE](https://www.nrcs.usda.gov/sites/default/files/2022-08/SSURGO-Metadata-Table-Column-Descriptions-Report.pdf)
+
+```{r}
+# Download and crop data from the NRCS SSURGO soils database
+bhef_get_ssurgo <- FedData::get_ssurgo(
+    template = bhef_boundary
+    , label = "bhef_soils"
+    , extraction.dir = paste0("../data/FedData/")
+    , force.redo = FALSE
+  )
+# clean up polygon data
+  wss_soil <- bhef_get_ssurgo$spatial
+  names(wss_soil) <- tolower(names(wss_soil))
+  #rename sf geom column
+  names(wss_soil)[names(wss_soil)==tolower(attr(wss_soil, "sf_column"))] = "geometry"
+  sf::st_geometry(wss_soil) = "geometry"
+# Plot the SSURGO mapunit polygons
+ggplot() +
+  geom_sf(data = wss_soil, mapping = aes(fill = musym)) + 
+  geom_sf(data = bhef_boundary, fill = NA, color = "black", lwd = 2) +
+  theme_light()
+#################################
+#join to tabular data
+#################################
+  ##############################
+  ##############################
+  # set depth in cm for soil data calculations
+    # e.g. if set to 30, calculations are performed for all layers up to 30 cm
+  ##############################
+  ##############################
+  my_depth <- max(bhef_get_ssurgo$tabular$chorizon$hzdepb.r, na.rm=T) # 30 # cm
+  ########################
+  # clean chorizon table
+  ########################
+  chorizon <- bhef_get_ssurgo$tabular$chorizon |> 
+    # remove columns with all na
+    dplyr::select_if(function(x){ any(!is.na(x)) } ) |> 
+    # aggregate to one observation per cokey for the join from chorizon data to component data
+    # compute weighted means
+      # variable `thick` which will be used to 
+        # relate the amount of soil in each horizon in each component. 
+          # For example, if the top horizon goes from 0-20 cm and the next horizon goes from 20-48 cm:
+            # thick for the first level will equal 20 
+            # thick for the second level will be the remainder up to 30 cm = 10
+    dplyr::group_by(cokey) |> 
+    dplyr::mutate(
+      # calculate max depth of each horizon
+      total.depth = max(hzdept.r, na.rm = TRUE)
+      , thick = ifelse(hzdepb.r > my_depth
+                     , my_depth - hzdept.r
+                     , hzdepb.r - hzdept.r
+                    )
+    ) |> 
+    #remove horizons that start below 30 cm
+    dplyr::filter(hzdept.r < my_depth) |>
+    # # remove unused factor levels
+    droplevels() |>
+    dplyr::group_by(cokey,total.depth) |> 
+    dplyr::summarise(
+      sand = round(weighted.mean(sandtotal.r, thick, na.rm = TRUE),2),
+      silt = round(weighted.mean(silttotal.r, thick, na.rm = TRUE),2),
+      clay = round(weighted.mean(claytotal.r, thick, na.rm = TRUE),2),
+      om = round(weighted.mean(om.r, thick, na.rm = TRUE),2),
+      ksat = round(weighted.mean(ksat.r, thick, na.rm = TRUE),2),
+      k = round(weighted.mean(kffact, thick, na.rm = TRUE),2),
+      cec = round(weighted.mean(cec7.r, thick, na.rm = TRUE),2),
+      ph = round(weighted.mean(ph1to1h2o.r, thick),2)
+    ) |> 
+    dplyr::ungroup()
+  ########################
+  # clean component table
+  ########################
+    component <- bhef_get_ssurgo$tabular$component |> 
+      dplyr::select(
+        mukey, cokey, compkind, comppct.r, compname, 
+        # majcompflag, slope.r, 
+        # slopelenusle.r, runoff, tfact, wei, weg, erocl, 
+        # elev.r, albedodry.r, airtempa.r, map.r, ffd.r, 
+        # cropprodindex, taxpartsize
+      ) |> 
+      dplyr::arrange(
+        mukey, cokey, comppct.r, compkind, compname
+      )
+      # comppct.r = The percentage of the component of the mapunit.
+        # use this for weighting
+  ########################
+  # join
+  ########################
+    # components & horizons
+    soil_components <- component |> 
+      dplyr::left_join(chorizon, by = c("cokey"="cokey")) |> 
+      dplyr::mutate_all(~ifelse(is.nan(.), NA, .))
+    ##########################
+    # final export
+    ##########################
+    wss_soil_export <- wss_soil |> 
+      # join mapunit table
+      dplyr::left_join(
+        bhef_get_ssurgo$tabular$mapunit |> 
+          dplyr::mutate(mukey=as.character(mukey), muarea_ha = muacres/2.471) |> 
+          dplyr::select(mukey, muname, mukind, muarea_ha, interpfocus, lkey)
+        , by = c("mukey"="mukey")
+      ) |> 
+      # join to components & horizons
+      dplyr::left_join(
+        # aggregate to mukey level
+        soil_components |>
+          dplyr::mutate(mukey=as.character(mukey)) |> 
+          dplyr::group_by(mukey) |> 
+          dplyr::summarise(
+            pct_clay = round(weighted.mean(clay, comppct.r, na.rm = TRUE),2)
+            , ph = round(weighted.mean(ph, comppct.r, na.rm = TRUE),2)
+          ) |> 
+          dplyr::ungroup()
+        , by = c("mukey"="mukey")
+      ) |> 
+      # transform
+      sf::st_transform(crs = transform_crs) |> 
+      # intersection
+      sf::st_intersection(
+        bhef_boundary |> 
+        dplyr::mutate(exp_forest_area_ha = as.numeric(sf::st_area(bhef_boundary)/10000)) |> 
+        dplyr::select(name, type, station, land_ownership, lead_scientist, exp_forest_area_ha)
+      )
+# export
+sf::st_write(wss_soil_export, "../data/bhef_wss_soil.gpkg")
+```
+
+plot export data
+
+```{r}
+####################
+# plot
+####################
+ggplot() +
+  geom_sf(data = wss_soil_export
+    , mapping = aes(fill = pct_clay)
+  ) + 
+  geom_sf(data = bhef_boundary, fill = NA, color = "black") +
+  scale_fill_viridis_c() +
+  labs(fill = "% Clay") +
+  theme_light() +
+  theme(
+    legend.position = "bottom"
+    , legend.direction = "horizontal"
+    , legend.text = element_text(size = 7)
+  )
+
+```
