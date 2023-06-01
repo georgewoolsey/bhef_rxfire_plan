@@ -1,0 +1,543 @@
+# Forest Cover Analysis {#cover_analysis}
+
+```{r, include=FALSE, warning=F, message=F}
+# knit options
+knitr::opts_chunk$set(
+  echo = TRUE
+  , warning = FALSE
+  , message = FALSE
+  , results='hide'
+  , fig.width = 10
+  , fig.height = 8
+)
+# data mgmt
+library(tidyverse)
+library(lubridate)
+# visualization
+library(RColorBrewer)
+library(scales)
+library(ggrepel)
+library(viridis)
+library(kableExtra)
+library(cowplot)
+# plotting
+library(mapview)
+# spatial
+library(sf)
+library(stars)
+library(terra)
+```
+
+```{r, results='hide'}
+# turn off the s2 processing 
+## https://stackoverflow.com/questions/68478179/how-to-resolve-spherical-geometry-failures-when-joining-spatial-data
+sf::sf_use_s2(FALSE)
+```
+
+## Read Data
+
+[Vector data](#vector_data) and [forest cover data](#lidar_data) created in prior chapters.
+
+```{r read-data}
+# read
+bhef_boundary <- sf::st_read("../data/bhef_boundary.gpkg")
+# bhef_harvests <- sf::st_read("../data/bhef_harvests.gpkg")
+# bhef_tsi <- sf::st_read("../data/bhef_tsi.gpkg")
+rx_fire <- sf::st_read("../data/rx_fire.gpkg")
+# # forest cov
+crowns_group <- sf::st_read("../data/crowns_group.gpkg")
+crowns_rast <- terra::rast("../data/crowns_st.tif")
+# chm <- terra::rast("../data/chm.tif") %>% 
+#   terra::aggregate(fact = 5, fun = "mean", na.rm = T)
+# elevation
+bhef_elev <- terra::rast("../data/bhef_elev.tif") 
+  # terra::aggregate(fact = 5, fun = "mean", na.rm = T)
+```
+
+## Aspect and HLI{#hli}
+
+Aspect of a slope (the direction or azimuth that a slope faces) strongly influences potential direct incident radiation and temperature. Untransformed, aspect is a poor variable for quantitative analysis, since 1° is adjacent to 360° – the numbers are very different even though the aspect is about the same. The following equation for Heat Load Index (HLI) rescales aspect to a scale of zero to one, with zero being the coolest slope (northeast) and one being the warmest slope (southwest). HLI is a proxy for aspect-driven solar heating.
+
+$$
+\textrm{Heat load index} = \frac{1 - \cos(\theta - 45)}{2}
+$$
+where $\theta$ = aspect in degrees east of north. While this and related equations are useful, they do not consider the steepness of the slope. For example, a 1° south-facing slope would receive the same heat load index as a 30° south-facing slope, even though the latter will be considerably warmer.
+
+HLI calculations have been developed which combine slope, folded aspect (i.e., “southwestness”), and latitude to estimate terrain-driven solar heating at a given location ([McCune & Keon 2002: eq. 2](https://onlinelibrary.wiley.com/doi/10.1111/j.1654-1103.2002.tb02087.x)). To calculate HLI, we used equation 2 of [McCune & Keon 2002: eq. 2](https://onlinelibrary.wiley.com/doi/10.1111/j.1654-1103.2002.tb02087.x). Higher values of HLI are typical on steep southwesterly slopes, while low values are common on steep northeasterly slopes. Moderate values are common in flatter terrain and on northwesterly and southeasterly aspects. 
+
+Aspect must first be "folded" about the north-south line, rescaling 0-360° to 0-180°, such that NE = NW, E = W, etc: 
+
+$$
+\textrm{Folded aspect°} = 180° \, - \, | Aspect° – 180° |
+$$
+
+
+```{r hli-calc, results='hide', fig.show='hide'}
+# convert elevation raster from terra to stars
+my_crs <- 5070 # EPSG:5070 = NAD83/Conus Albers (units = meters)  
+elev_stars_temp <- stars::st_as_stars(bhef_elev |> terra::project( paste0("EPSG:",my_crs) )) %>% 
+  setNames(c("elev"))
+# extract latitude degrees from stars object
+lats_temp <- sf::st_coordinates(elev_stars_temp) %>%
+  sf::st_as_sf(coords = c("x", "y"), crs = my_crs) %>%
+  sf::st_transform(crs = 4326) %>%
+  sf::st_coordinates() %>%
+  dplyr::as_tibble() %>%
+  setNames(c("longitude","latitude")) %>%
+  dplyr::select(latitude)
+gc()
+# hli function
+  # This equation returns ln(Rad, MJ · cm–2 · yr–1). It can
+  # be returned to an arithmetic scale with the EXP(x)
+  # function.
+hli_fn <- function(slope_rad, folded_aspect_rad, latitude_rad){
+  exp(
+    (-1*1.236) +
+      1.350*cos(latitude_rad)*cos(slope_rad) +
+      (-1*1.376)*cos(folded_aspect_rad)*sin(slope_rad)*sin(latitude_rad) +
+      (-1*0.331)*sin(latitude_rad)*sin(slope_rad) +
+      0.375*sin(folded_aspect_rad)*sin(slope_rad)
+  )
+}
+# calculate slope and aspect from DEM
+topo_temp <- c(
+    elev_stars_temp
+    , starsExtra::slope(elev_stars_temp)
+    , starsExtra::aspect(elev_stars_temp)
+  ) %>% 
+  setNames(
+    c("elev", "slope_deg", "aspect_deg")
+  ) %>% 
+  dplyr::mutate(
+    slope_rad = pracma::deg2rad(as.numeric(slope_deg))
+    , aspect_rad = pracma::deg2rad(as.numeric(aspect_deg))
+    , folded_aspect_deg = 180 - abs(as.numeric(aspect_deg)-180)
+    , folded_aspect_rad = pracma::deg2rad(folded_aspect_deg)
+    , latitude_deg = lats_temp$latitude
+    , latitude_rad = pracma::deg2rad(as.numeric(latitude_deg))
+    , hli = dplyr::case_when(
+        hli_fn(slope_rad, folded_aspect_rad, latitude_rad) > 1 ~ 1
+        , hli_fn(slope_rad, folded_aspect_rad, latitude_rad) < 0 ~ 0
+        , TRUE ~ hli_fn(slope_rad, folded_aspect_rad, latitude_rad)
+      )
+  )
+# convert just HLI back to terra
+hli <- terra::rast((topo_temp %>% dplyr::select(hli))[]) %>% 
+  terra::project( terra::crs(crowns_rast) ) %>% 
+  # resample to align layers
+  terra::resample(y=crowns_rast, method = "bilinear") %>% 
+  terra::crop(crowns_rast)
+  # rename
+  names(hli) <- "hli"
+plot(hli, main = "HLI")
+# does it have the same extent?
+terra::ext(hli) == terra::ext(crowns_rast)
+if(FALSE){
+# smooth HLI with median value in matrix
+  # d = 1 = 3x3 # d = 2 = 5x5 # d = 3 = 7x7
+  # fw_temp <- terra::focalMat(hli, d = 2, type = "rectangle")
+  fw_temp <- matrix(1,5,5)
+  hli <- terra::focal(hli, w = fw_temp, fun = "median", na.rm=T)
+  plot(hli, main = "HLI smooth")
+  # does it have the same extent?
+  terra::ext(hli) == terra::ext(crowns_rast)
+}
+# aggregate to 25m resolution
+hli %>% 
+  terra::aggregate(fact = 25, fun = "median") %>% 
+  plot(main = "HLI aggregate")
+```
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
+remove(list = ls()[grep("_temp",ls())])
+gc()
+```
+
+## Tree Crown Cover
+
+The tree crown raster data represents tree crowns (interconnected crown groups or individual crowns) with minimum tree height of 2 meters was created [here](#itc) using `lidR::dalponte2016`. Values of this raster are tree crown id's. 
+
+```{r crowns-rast, results='hide', fig.show='hide'}
+# values
+crowns_rast %>% terra::values() %>% summary()
+# plot
+crowns_rast %>% 
+  as.data.frame(xy=T) %>% 
+  dplyr::rename(f=3) %>% 
+  ggplot() +
+    geom_raster(mapping=aes(x=x,y=y,fill=f)) +
+    scale_fill_viridis_c()
+# zoom plot
+crowns_rast %>% 
+  terra::crop(
+    bhef_boundary %>% sf::st_centroid() %>% sf::st_buffer(10)
+  ) %>% 
+  as.data.frame(xy=T) %>% 
+  dplyr::rename(f=3) %>% 
+  ggplot() +
+    geom_raster(mapping=aes(x=x,y=y,fill=as.factor(f))) +
+    scale_fill_viridis_d(option="turbo")
+# mapview
+mv_temp <- crowns_rast %>% 
+  terra::crop(
+    bhef_boundary %>% sf::st_centroid() %>% sf::st_buffer(500)
+  ) %>% 
+  stars::st_as_stars()
+mapview::mapviewOptions(homebutton = FALSE, basemaps = c("Esri.WorldImagery"))
+mapview::mapview(mv_temp, col.regions = "forestgreen", na.color = "transparent", legend = F)
+# reclass crowns as 1, else 0
+  # reclass matrix
+  rcl_temp <- c(
+      crowns_rast %>% terra::values() %>% min(na.rm = T)
+      , crowns_rast %>% terra::values() %>% max(na.rm = T)
+      , 1
+    ) %>%  
+    matrix(ncol=3, byrow=TRUE)
+  # binary raster
+  iscrown_rast <- crowns_rast %>% 
+    terra::classify(
+      rcl = rcl_temp
+      , include.lowest = T
+      , others = 0
+    ) %>% 
+    # update to 0/1 because na values are not 0
+    terra::subst(from=NA,to=0)
+# values
+iscrown_rast %>% terra::values() %>% summary()
+iscrown_rast %>% terra::res()
+# plot
+iscrown_rast %>% 
+  as.data.frame(xy=T) %>% 
+  dplyr::rename(f=3) %>% 
+  ggplot() +
+    geom_raster(mapping=aes(x=x,y=y,fill=as.factor(f))) +
+    geom_sf(data = bhef_boundary, fill = NA, color = "black", lwd = 1.1) +
+    scale_fill_viridis_d(na.value = "transparent")
+# plot zoom
+iscrown_rast %>% 
+  terra::crop(
+    bhef_boundary %>% sf::st_centroid() %>% sf::st_buffer(10)
+  ) %>% 
+  as.data.frame(xy=T) %>% 
+  dplyr::rename(f=3) %>% 
+  ggplot() +
+    geom_raster(mapping=aes(x=x,y=y,fill=as.factor(f))) +
+    scale_fill_viridis_d(na.value = "transparent")
+```
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
+remove(list = ls()[grep("_temp",ls())])
+gc()
+```
+
+## Aggregate and Crop to Rx fire Units
+
+```{r agg-rast-dta}
+# select aggregate resolution: 25 = 25x25m grid
+agg_res <- 25
+# aggreaged and combine layers
+layers <- c(
+    iscrown_rast %>% 
+      terra::aggregate(fact = agg_res, fun = "mean")
+    , hli %>% 
+      terra::aggregate(fact = agg_res, fun = "median")
+  ) %>% 
+  setNames(c("crowncov", "hli"))
+# crop to rx fire units bounds
+layers <- layers %>% 
+  terra::mask(
+    rx_fire %>% 
+      sf::st_union() %>% 
+      terra::vect()
+  )
+# plot
+nm_temp <- c("% Canopy Cov.", "HLI")
+plt_fn_temp <- function(layer_n) {
+  plt <- layers[[layer_n]] %>% 
+    as.data.frame(xy=T) %>% 
+    dplyr::rename(f=3) %>% 
+    ggplot() +
+      geom_raster(mapping=aes(x=x,y=y,fill=f)) +
+      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
+      geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
+      geom_sf_label(data = rx_fire, aes(label = unit)
+        , label.size = NA
+        , alpha = 0
+        , size = 3
+      ) +
+      coord_sf(expand = F) +
+      scale_fill_viridis_c(option = (8-layer_n), alpha = 0.8) + 
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      labs(
+          title = nm_temp[layer_n]
+          , subtitle = paste0("Rx fire units")
+          , x=""
+          , y=""
+          , fill = nm_temp[layer_n]
+        ) +
+      theme_light() +
+      theme(
+        legend.position = "bottom"
+        , legend.direction = "horizontal"
+        , legend.margin = margin(0,0,0,0)
+        , legend.box.margin = margin(-21,0,2,0)
+        , legend.text = element_text(size = 7, angle = 25, hjust = 0.7)
+        , legend.title = element_text(size = 7)
+        , axis.text = element_text(size = 7)
+        , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
+        , plot.title = element_text(size = 10, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
+        , panel.border = element_blank()
+      )
+  return(plt)
+}
+plt_list_temp <- 1:(layers %>% terra::nlyr()) %>% 
+  purrr::map(plt_fn_temp)
+
+# combine
+cowplot::plot_grid(
+  plotlist = plt_list_temp
+  , nrow = 1
+)
+```
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
+remove(list = ls()[grep("_temp",ls())])
+gc()
+```
+
+## Classify and Sample
+
+```{r class-create}
+rast_grp_class_fn <- function(layer_n, pct_cut_list = seq(0,1,0.2)) {
+  # classify based on percentile
+    cuts_temp <- stats::quantile(
+      layers[[layer_n]] %>% terra::values()
+      , probs = pct_cut_list
+      , na.rm = T
+    )
+  # create classification raster based on percentiles
+    rast_temp <- layers[[layer_n]] %>% 
+      classify(
+        rcl = cuts_temp
+        , include.lowest=TRUE
+        , brackets=TRUE
+      )
+  # recode to get rid of bracket labels and set index to 1 instead of 0 based
+    rcl_temp <- rast_temp %>% 
+      terra::levels() %>% 
+      purrr::pluck(1) %>% 
+      dplyr::as_tibble() %>% 
+      dplyr::mutate(
+        old = value
+        , new = value+1
+      ) %>% 
+      dplyr::select(old,new)
+  # classify
+    rast_temp <- rast_temp %>% 
+      terra::classify(rcl=rcl_temp) %>% 
+      terra::categories(
+        value = rcl_temp %>% 
+          dplyr::mutate(category = new) %>% 
+          dplyr::select(new,category) %>% 
+          dplyr::rename(id=new)
+      )
+  # return
+  return(rast_temp)
+}
+# create grouped raster stack
+layers_grp <- 1:(layers %>% terra::nlyr()) %>% 
+  purrr::map(rast_grp_class_fn) %>% 
+  terra::rast() %>% 
+  setNames(
+    names(layers)
+  )
+# plot
+nm_temp <- c("% Canopy Cov.", "HLI")
+plt_fn_temp <- function(layer_n) {
+  plt <- layers_grp[[layer_n]] %>% 
+    as.data.frame(xy=T) %>% 
+    dplyr::rename(f=3) %>% 
+    dplyr::mutate(
+      f = factor(
+        f
+        , levels = 1:5
+        , labels = c("low","med.low","medium","med.high","high")
+        , ordered = T
+      )
+    ) %>% 
+    ggplot() +
+      geom_raster(mapping=aes(x=x,y=y,fill=f)) +
+      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
+      geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
+      geom_sf_label(data = rx_fire, aes(label = unit)
+        , label.size = NA
+        , alpha = 0
+        , size = 3
+      ) +
+      coord_sf(expand = F) +
+      scale_fill_viridis_d(option = "turbo", alpha = 0.8) + 
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      labs(
+          title = nm_temp[layer_n]
+          , subtitle = paste0("Rx fire units")
+          , x=""
+          , y=""
+          , fill = nm_temp[layer_n]
+        ) +
+      theme_light() +
+      theme(
+        legend.position = "bottom"
+        , legend.direction = "horizontal"
+        , legend.margin = margin(0,0,0,0)
+        , legend.box.margin = margin(-21,0,2,0)
+        , legend.text = element_text(size = 7)
+        , legend.title = element_text(size = 7)
+        , axis.text = element_text(size = 7)
+        , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
+        , plot.title = element_text(size = 10, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
+        , panel.border = element_blank()
+      )
+  return(plt)
+}
+# plot
+plt_list_temp <- 1:(layers_grp %>% terra::nlyr()) %>% 
+  purrr::map(plt_fn_temp)
+
+# combine
+cowplot::plot_grid(
+  plotlist = plt_list_temp
+  , nrow = 1
+)
+```
+
+### Map of grouped Canopy Cover and HLI
+
+```{r mapview-grp, results='asis'}
+
+l1_temp <- layers_grp[[1]] %>% 
+  stars::st_as_stars()
+l2_temp <- layers_grp[[2]] %>% 
+  stars::st_as_stars()
+mapview::mapviewOptions(
+  homebutton = FALSE
+  , basemaps = c("Esri.WorldImagery","OpenTopoMap")
+  , na.color = "transparent"
+)
+mapview::mapview(
+  l1_temp
+  , col.regions = viridis::turbo(n=5)
+  , legend = TRUE
+  , layer.name = names(layers_grp[[1]])
+) + 
+mapview::mapview(
+  l2_temp
+  , col.regions = viridis::turbo(n=5)
+  , legend = T
+  , layer.name = names(layers_grp[[2]])
+  , hide = T
+) 
+
+```
+
+### Combine Grouped Canopy Cover and HLI 
+
+```{r class-combine}
+# combine layers for classification
+  concat_rast <-terra::concats(layers_grp[[1]], layers_grp[[2]]) %>% 
+    setNames(
+      (layers %>% names() %>% paste(collapse = "_"))
+    )
+# data_frame
+concat_df <- concat_rast %>%
+    as.data.frame(xy=T) %>% 
+    separate_wider_delim(
+      crowncov_hli
+      , delim = "_"
+      , names=c("crowncov", "hli")
+      , cols_remove = F
+    ) %>% 
+    dplyr::mutate(
+      crowncov_hli_filter = forcats::fct_other(
+        f = crowncov_hli
+        , keep = c(
+          "1_1","1_3","1_5"
+          , "3_1","3_3","3_5"
+          , "5_1","5_3","5_5"
+        )
+        , other_level = "other"
+      )
+      , dplyr::across(
+          c(crowncov,hli)
+          , ~ factor(
+              .x
+              , levels = 1:5
+              , labels = c("low","med.low","medium","med.high","high")
+              , ordered = T
+            )
+        )
+      , lat = y
+      , lon = x
+    ) %>% 
+    # points
+    sf::st_as_sf(coords=c("lat","lon"),crs=terra::crs(crowns_rast))
+# plot
+   concat_df %>% 
+    dplyr::filter(crowncov_hli_filter!="other") %>% 
+    ggplot() + 
+      geom_tile(aes(x=x,y=y,fill=crowncov_hli_filter)) +
+      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
+      geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
+      geom_sf_label(data = rx_fire, aes(label = unit)
+        , label.size = NA
+        , alpha = 0
+        , size = 3
+      ) +
+      coord_sf(expand = F) +
+      scale_fill_viridis_d(option = "turbo", alpha = 0.8) + 
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      labs(
+          title = "Canopy Cover (1=low,3=med,5=hi)\nx HLI (1=low,3=med,5=hi)"
+          , subtitle = paste0("Rx fire units")
+          , x=""
+          , y=""
+          , fill = "Canopy_HLI"
+        ) +
+      theme_light() +
+      theme(
+        legend.position = "top"
+        , legend.direction = "horizontal"
+        , legend.margin = margin(0,0,0,0)
+        # , legend.box.margin = margin(-21,0,2,0)
+        , legend.text = element_text(size = 7)
+        , legend.title = element_text(size = 7)
+        , axis.text = element_text(size = 7)
+        , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
+        , plot.title = element_text(size = 10, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
+        , panel.border = element_blank()
+      ) + 
+      guides(fill=guide_legend(nrow=3,byrow=TRUE))
+```
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
+remove(list = ls()[grep("_temp",ls())])
+gc()
+
+concat_df %>% str()
+
+ggplot(
+  data = concat_df %>% 
+    sf::st_filter(
+      bhef_boundary %>% 
+        sf::st_centroid() %>% 
+        sf::st_buffer(20)
+    )
+) + 
+  geom_sf(mapping = aes(color = crowncov_hli_filter), shape = ".")
+```

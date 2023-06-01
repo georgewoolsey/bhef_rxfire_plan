@@ -4,9 +4,16 @@ author: "George Woolsey"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 output: 
-  bookdown::gitbook: default
-  # bookdown::render_book("index.Rmd", bookdown::gitbook(lib_dir = "src"))
+  bookdown::gitbook:
+    includes:
+      in_header: header.html
 documentclass: book
+book_filename: "bhef_rxfire_plan"
+output_dir: "../docs"
+language:
+  ui:
+    chapter_name: "Section "
+delete_merged_file: true
 bibliography: [packages.bib]
 biblio-style: apalike
 csl: https://raw.githubusercontent.com/citation-style-language/styles/master/research-institute-for-nature-and-forest.csl

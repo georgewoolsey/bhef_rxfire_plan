@@ -203,25 +203,46 @@ The [USGS National Map](https://apps.nationalmap.gov/downloader/) was used to ob
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # plot
-ggplot() + stars::geom_stars(data = bhef_elev[bhef_boundary]) +
-  scale_fill_viridis_c(option = "viridis", alpha = 0.9, na.value = "transparent") +
+ggplot() + 
+  geom_raster(
+    data = bhef_elev %>% 
+      terra::rast() %>% 
+      terra::mask(
+        bhef_boundary %>% terra::vect()
+      ) %>% 
+      as.data.frame(xy=T) %>% 
+      dplyr::rename(elev = 3)
+    , mapping = aes(x=x,y=y,fill=elev)
+  ) +
+  # stars::geom_stars(data = bhef_elev[bhef_boundary]) +
   geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
+  scale_fill_viridis_c(
+    option = "viridis"
+    , alpha = 0.9
+    , na.value = "transparent"
+    , breaks = scales::extended_breaks(n = 6)
+    , labels = scales::comma
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   labs(
       title = "BHEF Elevation Map"
       , subtitle = sf::st_crs(bhef_elev)$input
+      , x = ""
+      , y = ""
+      , fill = "Elev. (m)"
     ) +
-  xlab("") +
-  ylab("") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_bw() +
+  theme_light() +
   theme(
-    axis.text = element_text(size = 8)
-    # , panel.grid = element_blank()
+    legend.position = "bottom"
+    , legend.direction = "horizontal"
+    , legend.margin = margin(0,0,0,0)
+    , legend.box.margin = margin(-7,0,2,0)
+    , legend.text = element_text(size = 7, angle = 25, hjust = 0.7)
+    , legend.title = element_text(size = 7)
+    , axis.text = element_text(size = 7)
     , panel.border = element_blank()
-  ) +
-  guides(
-    fill = guide_legend(title="Elev. (m)")
+    
   )
 
 ```
@@ -437,9 +458,9 @@ kable(nlas@data %>%
 ) %>% 
 # kable_classic() %>%
 add_header_above(c(" " = 2, "Point Return Height (m)" = 5)) %>% 
-kable_material(c("striped", "hover")) %>%
-# column_spec(., 2, width = "20em") %>% 
-kable_styling(font_size = 11) 
+  kable_classic(full_width=T) %>% 
+  kableExtra::kable_styling(font_size = 10,fixed_thead = TRUE) %>% 
+  kableExtra::scroll_box(width = "740px")
     
 # ggplot() + geom_histogram(data = (nlas@data %>% dplyr::filter(Classification == 1)), aes(Z), binwidth = 1)
 
@@ -623,7 +644,7 @@ tree_tops %>% sf::st_set_geometry(NULL) %>%
 gc()
 ```
 
-### Individual Tree Crown (ITC) Segmentation
+### Individual Tree Crown (ITC) Segmentation{#itc}
 
 Segment the canopy height model raster grid as individual tree crowns (ITC). Following the seeds + growing region algorithm described by [Dalponte and Coomes (2016)](https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/2041-210X.12575) to create a vector representation of tree crowns. Then using the individual tree crowns to create groupings and summary statistics of height for each interconnected crown group.
 
@@ -836,9 +857,11 @@ kable(crowns_group %>% sf::st_set_geometry(NULL) %>%
   )
   , align=rep('c', 5)
 ) %>% 
-add_header_above(c(" " = 2, "Mean" = 6)) %>%
-kable_styling(font_size = 9) %>% 
-column_spec(1, bold = TRUE, width = "5em")
+  add_header_above(c(" " = 2, "Mean" = 6)) %>%
+  kable_classic(full_width=T) %>% 
+  kableExtra::kable_styling(font_size = 10,fixed_thead = TRUE) %>% 
+  kableExtra::scroll_box(width = "740px") 
+  # column_spec(1, bold = TRUE, width = "5em")
 
 
 ```

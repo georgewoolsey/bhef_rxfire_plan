@@ -1,8 +1,12 @@
 book_filename: "bhef_rxfire_plan"
 output_dir: "../docs"
+output: 
+  bookdown::gitbook:
+    includes:
+      in_header: header.html
 language:
   ui:
-    chapter_name: "Chapter "
+    chapter_name: "Section "
 delete_merged_file: true
 # rmd_subdir: ["src/"]
 # rmd_files: ["index.Rmd"

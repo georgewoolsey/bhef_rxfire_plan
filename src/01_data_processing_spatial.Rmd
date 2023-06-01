@@ -514,13 +514,10 @@ kable(stem_map %>% sf::st_set_geometry(NULL) %>%
   )
   , align=rep('c', 5)
 ) %>% 
-# kable_classic() %>%
-add_header_above(c(" " = 3, "DBH (in.)" = 3, "QMD (in.)" = 1, "Height (ft.)" = 4)) %>% 
-kable_material(c("striped", "hover")) %>%
-kable_styling(font_size = 9) %>% 
-column_spec(1, bold = TRUE, width = "1em")
-
-
+  add_header_above(c(" " = 3, "DBH (in.)" = 3, "QMD (in.)" = 1, "Height (ft.)" = 4)) %>% 
+  kable_classic(full_width=T) %>% 
+  kableExtra::kable_styling(font_size = 10,fixed_thead = TRUE) %>% 
+  kableExtra::scroll_box(width = "740px") 
 ```
 
 ## Map Harvests, Research Plots, Stem Map

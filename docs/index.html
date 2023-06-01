@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Black Hills Experimental Forest Prescribed Fire Planning</title>
   <meta name="description" content="Using the bookdown package to write a book for BHEF Rx fire planning. The output format for this example is bookdown::gitbook." />
-  <meta name="generator" content="bookdown 0.25 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Black Hills Experimental Forest Prescribed Fire Planning" />
   <meta property="og:type" content="book" />
@@ -23,7 +23,7 @@
 <meta name="author" content="George Woolsey" />
 
 
-<meta name="date" content="2022-08-26" />
+<meta name="date" content="2023-05-31" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -54,7 +54,7 @@
 <script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 <script src="libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
-<script src="libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+<script src="libs/htmlwidgets-1.6.1/htmlwidgets.js"></script>
 <link href="libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
 <script src="libs/leaflet-1.3.1/leaflet.js"></script>
 <link href="libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
@@ -107,7 +107,7 @@ code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code span.at { color: #7d9029; } /* Attribute */
 code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
+code span.bu { color: #008000; } /* BuiltIn */
 code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
 code span.ch { color: #4070a0; } /* Char */
 code span.cn { color: #880000; } /* Constant */
@@ -120,7 +120,7 @@ code span.er { color: #ff0000; font-weight: bold; } /* Error */
 code span.ex { } /* Extension */
 code span.fl { color: #40a070; } /* Float */
 code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
+code span.im { color: #008000; font-weight: bold; } /* Import */
 code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
 code span.kw { color: #007020; font-weight: bold; } /* Keyword */
 code span.op { color: #666666; } /* Operator */
@@ -147,77 +147,77 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <nav role="navigation">
 
 <ul class="summary">
-<li><a href="index.html#introduction" id="toc-introduction"><span class="toc-section-number">1</span> Introduction<span></span></a></li>
-<li><a href="objective.html#objective" id="toc-objective"><span class="toc-section-number">2</span> Objective<span></span></a></li>
-<li><a href="vector_data.html#vector_data" id="toc-vector_data"><span class="toc-section-number">3</span> Import Vector Data<span></span></a>
+<li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a></li>
+<li class="chapter" data-level="2" data-path="objective.html"><a href="objective.html"><i class="fa fa-check"></i><b>2</b> Objective</a></li>
+<li class="chapter" data-level="3" data-path="vector_data.html"><a href="vector_data.html"><i class="fa fa-check"></i><b>3</b> Import Vector Data</a>
 <ul>
-<li><a href="vector_data.html#national-forest-management-data-download" id="toc-national-forest-management-data-download"><span class="toc-section-number">3.1</span> National Forest Management data download<span></span></a></li>
-<li><a href="vector_data.html#load-research-plot-data" id="toc-load-research-plot-data"><span class="toc-section-number">3.2</span> Load Research Plot data<span></span></a></li>
-<li><a href="vector_data.html#load-stem-map-data" id="toc-load-stem-map-data"><span class="toc-section-number">3.3</span> Load Stem Map data<span></span></a></li>
-<li><a href="vector_data.html#load-rx-fire-shapefile" id="toc-load-rx-fire-shapefile"><span class="toc-section-number">3.4</span> Load Rx Fire shapefile<span></span></a></li>
-<li><a href="vector_data.html#load-national-forests-shapefile" id="toc-load-national-forests-shapefile"><span class="toc-section-number">3.5</span> Load National Forests shapefile<span></span></a></li>
-<li><a href="vector_data.html#load-experimental-forests-shapefile" id="toc-load-experimental-forests-shapefile"><span class="toc-section-number">3.6</span> Load Experimental Forests shapefile<span></span></a></li>
-<li><a href="vector_data.html#tsi" id="toc-tsi"><span class="toc-section-number">3.7</span> Load FACTS Timber Stand Improvement<span></span></a></li>
-<li><a href="vector_data.html#harvests" id="toc-harvests"><span class="toc-section-number">3.8</span> Load FACTS Timber Harvests<span></span></a>
+<li class="chapter" data-level="3.1" data-path="vector_data.html"><a href="vector_data.html#national-forest-management-data-download"><i class="fa fa-check"></i><b>3.1</b> National Forest Management data download</a></li>
+<li class="chapter" data-level="3.2" data-path="vector_data.html"><a href="vector_data.html#load-research-plot-data"><i class="fa fa-check"></i><b>3.2</b> Load Research Plot data</a></li>
+<li class="chapter" data-level="3.3" data-path="vector_data.html"><a href="vector_data.html#load-stem-map-data"><i class="fa fa-check"></i><b>3.3</b> Load Stem Map data</a></li>
+<li class="chapter" data-level="3.4" data-path="vector_data.html"><a href="vector_data.html#load-rx-fire-shapefile"><i class="fa fa-check"></i><b>3.4</b> Load Rx Fire shapefile</a></li>
+<li class="chapter" data-level="3.5" data-path="vector_data.html"><a href="vector_data.html#load-national-forests-shapefile"><i class="fa fa-check"></i><b>3.5</b> Load National Forests shapefile</a></li>
+<li class="chapter" data-level="3.6" data-path="vector_data.html"><a href="vector_data.html#load-experimental-forests-shapefile"><i class="fa fa-check"></i><b>3.6</b> Load Experimental Forests shapefile</a></li>
+<li class="chapter" data-level="3.7" data-path="vector_data.html"><a href="vector_data.html#tsi"><i class="fa fa-check"></i><b>3.7</b> Load FACTS Timber Stand Improvement</a></li>
+<li class="chapter" data-level="3.8" data-path="vector_data.html"><a href="vector_data.html#harvests"><i class="fa fa-check"></i><b>3.8</b> Load FACTS Timber Harvests</a>
 <ul>
-<li><a href="vector_data.html#harvests-by-treatment-type" id="toc-harvests-by-treatment-type"><span class="toc-section-number">3.8.1</span> Harvests by treatment type<span></span></a></li>
+<li class="chapter" data-level="3.8.1" data-path="vector_data.html"><a href="vector_data.html#harvests-by-treatment-type"><i class="fa fa-check"></i><b>3.8.1</b> Harvests by treatment type</a></li>
 </ul></li>
-<li><a href="vector_data.html#join-research-plot-to-harvest" id="toc-join-research-plot-to-harvest"><span class="toc-section-number">3.9</span> Join Research Plot to Harvest<span></span></a></li>
-<li><a href="vector_data.html#join-stem-map-to-research-plot-harvest" id="toc-join-stem-map-to-research-plot-harvest"><span class="toc-section-number">3.10</span> Join Stem Map to Research Plot &amp; Harvest<span></span></a>
+<li class="chapter" data-level="3.9" data-path="vector_data.html"><a href="vector_data.html#join-research-plot-to-harvest"><i class="fa fa-check"></i><b>3.9</b> Join Research Plot to Harvest</a></li>
+<li class="chapter" data-level="3.10" data-path="vector_data.html"><a href="vector_data.html#join-stem-map-to-research-plot-harvest"><i class="fa fa-check"></i><b>3.10</b> Join Stem Map to Research Plot &amp; Harvest</a>
 <ul>
-<li><a href="vector_data.html#stem-map-descriptive-statistics." id="toc-stem-map-descriptive-statistics."><span class="toc-section-number">3.10.1</span> Stem Map Descriptive statistics.<span></span></a></li>
+<li class="chapter" data-level="3.10.1" data-path="vector_data.html"><a href="vector_data.html#stem-map-descriptive-statistics."><i class="fa fa-check"></i><b>3.10.1</b> Stem Map Descriptive statistics.</a></li>
 </ul></li>
-<li><a href="vector_data.html#map-harvests-research-plots-stem-map" id="toc-map-harvests-research-plots-stem-map"><span class="toc-section-number">3.11</span> Map Harvests, Research Plots, Stem Map<span></span></a></li>
-<li><a href="vector_data.html#write-out-data" id="toc-write-out-data"><span class="toc-section-number">3.12</span> Write Out Data<span></span></a></li>
+<li class="chapter" data-level="3.11" data-path="vector_data.html"><a href="vector_data.html#map-harvests-research-plots-stem-map"><i class="fa fa-check"></i><b>3.11</b> Map Harvests, Research Plots, Stem Map</a></li>
+<li class="chapter" data-level="3.12" data-path="vector_data.html"><a href="vector_data.html#write-out-data"><i class="fa fa-check"></i><b>3.12</b> Write Out Data</a></li>
 </ul></li>
-<li><a href="lidar_data.html#lidar_data" id="toc-lidar_data"><span class="toc-section-number">4</span> Analyze Lidar Data<span></span></a>
+<li class="chapter" data-level="4" data-path="lidar_data.html"><a href="lidar_data.html"><i class="fa fa-check"></i><b>4</b> Analyze Lidar Data</a>
 <ul>
-<li><a href="lidar_data.html#overwrite-data-switch" id="toc-overwrite-data-switch"><span class="toc-section-number">4.1</span> Overwrite Data Switch<span></span></a></li>
-<li><a href="lidar_data.html#download-data-from-natl-map" id="toc-download-data-from-natl-map"><span class="toc-section-number">4.2</span> Download Data From Nat’l Map<span></span></a></li>
-<li><a href="lidar_data.html#load-vector-data" id="toc-load-vector-data"><span class="toc-section-number">4.3</span> Load Vector Data<span></span></a></li>
-<li><a href="lidar_data.html#load-elevation-data" id="toc-load-elevation-data"><span class="toc-section-number">4.4</span> Load Elevation Data<span></span></a>
+<li class="chapter" data-level="4.1" data-path="lidar_data.html"><a href="lidar_data.html#overwrite-data-switch"><i class="fa fa-check"></i><b>4.1</b> Overwrite Data Switch</a></li>
+<li class="chapter" data-level="4.2" data-path="lidar_data.html"><a href="lidar_data.html#download-data-from-natl-map"><i class="fa fa-check"></i><b>4.2</b> Download Data From Nat’l Map</a></li>
+<li class="chapter" data-level="4.3" data-path="lidar_data.html"><a href="lidar_data.html#load-vector-data"><i class="fa fa-check"></i><b>4.3</b> Load Vector Data</a></li>
+<li class="chapter" data-level="4.4" data-path="lidar_data.html"><a href="lidar_data.html#load-elevation-data"><i class="fa fa-check"></i><b>4.4</b> Load Elevation Data</a>
 <ul>
-<li><a href="lidar_data.html#elevation-plot" id="toc-elevation-plot"><span class="toc-section-number">4.4.1</span> Elevation plot<span></span></a></li>
+<li class="chapter" data-level="4.4.1" data-path="lidar_data.html"><a href="lidar_data.html#elevation-plot"><i class="fa fa-check"></i><b>4.4.1</b> Elevation plot</a></li>
 </ul></li>
-<li><a href="lidar_data.html#lidar-data-processing" id="toc-lidar-data-processing"><span class="toc-section-number">4.5</span> Lidar Data Processing<span></span></a>
+<li class="chapter" data-level="4.5" data-path="lidar_data.html"><a href="lidar_data.html#lidar-data-processing"><i class="fa fa-check"></i><b>4.5</b> Lidar Data Processing</a>
 <ul>
-<li><a href="lidar_data.html#height-normalization-using-dem" id="toc-height-normalization-using-dem"><span class="toc-section-number">4.5.1</span> Height normalization using DEM<span></span></a></li>
-<li><a href="lidar_data.html#canopy-height-model" id="toc-canopy-height-model"><span class="toc-section-number">4.5.2</span> Canopy Height model<span></span></a></li>
-<li><a href="lidar_data.html#individual-tree-detection-itd" id="toc-individual-tree-detection-itd"><span class="toc-section-number">4.5.3</span> Individual Tree Detection (ITD)<span></span></a></li>
-<li><a href="lidar_data.html#individual-tree-crown-itc-segmentation" id="toc-individual-tree-crown-itc-segmentation"><span class="toc-section-number">4.5.4</span> Individual Tree Crown (ITC) Segmentation<span></span></a></li>
+<li class="chapter" data-level="4.5.1" data-path="lidar_data.html"><a href="lidar_data.html#height-normalization-using-dem"><i class="fa fa-check"></i><b>4.5.1</b> Height normalization using DEM</a></li>
+<li class="chapter" data-level="4.5.2" data-path="lidar_data.html"><a href="lidar_data.html#canopy-height-model"><i class="fa fa-check"></i><b>4.5.2</b> Canopy Height model</a></li>
+<li class="chapter" data-level="4.5.3" data-path="lidar_data.html"><a href="lidar_data.html#individual-tree-detection-itd"><i class="fa fa-check"></i><b>4.5.3</b> Individual Tree Detection (ITD)</a></li>
+<li class="chapter" data-level="4.5.4" data-path="lidar_data.html"><a href="lidar_data.html#individual-tree-crown-itc-segmentation"><i class="fa fa-check"></i><b>4.5.4</b> Individual Tree Crown (ITC) Segmentation</a></li>
 </ul></li>
-<li><a href="lidar_data.html#lidar-derived-crown-groups-summary" id="toc-lidar-derived-crown-groups-summary"><span class="toc-section-number">4.6</span> Lidar-Derived Crown Groups Summary<span></span></a>
+<li class="chapter" data-level="4.6" data-path="lidar_data.html"><a href="lidar_data.html#lidar-derived-crown-groups-summary"><i class="fa fa-check"></i><b>4.6</b> Lidar-Derived Crown Groups Summary</a>
 <ul>
-<li><a href="lidar_data.html#cg_sum" id="toc-cg_sum"><span class="toc-section-number">4.6.1</span> Crown Group Summary Statistics<span></span></a></li>
+<li class="chapter" data-level="4.6.1" data-path="lidar_data.html"><a href="lidar_data.html#cg_sum"><i class="fa fa-check"></i><b>4.6.1</b> Crown Group Summary Statistics</a></li>
 </ul></li>
-<li><a href="lidar_data.html#map-crowns-and-rx-fire-area" id="toc-map-crowns-and-rx-fire-area"><span class="toc-section-number">4.7</span> Map Crowns and Rx Fire Area<span></span></a></li>
-<li><a href="lidar_data.html#write-out-data-1" id="toc-write-out-data-1"><span class="toc-section-number">4.8</span> Write Out Data<span></span></a></li>
+<li class="chapter" data-level="4.7" data-path="lidar_data.html"><a href="lidar_data.html#map-crowns-and-rx-fire-area"><i class="fa fa-check"></i><b>4.7</b> Map Crowns and Rx Fire Area</a></li>
+<li class="chapter" data-level="4.8" data-path="lidar_data.html"><a href="lidar_data.html#write-out-data-1"><i class="fa fa-check"></i><b>4.8</b> Write Out Data</a></li>
 </ul></li>
-<li><a href="cover_analysis.html#cover_analysis" id="toc-cover_analysis"><span class="toc-section-number">5</span> Forest Cover Analysis<span></span></a>
+<li class="chapter" data-level="5" data-path="cover_analysis.html"><a href="cover_analysis.html"><i class="fa fa-check"></i><b>5</b> Forest Cover Analysis</a>
 <ul>
-<li><a href="cover_analysis.html#set-contour-line-interval" id="toc-set-contour-line-interval"><span class="toc-section-number">5.1</span> Set Contour Line Interval<span></span></a></li>
-<li><a href="cover_analysis.html#read-data" id="toc-read-data"><span class="toc-section-number">5.2</span> Read Data<span></span></a>
+<li class="chapter" data-level="5.1" data-path="cover_analysis.html"><a href="cover_analysis.html#set-contour-line-interval"><i class="fa fa-check"></i><b>5.1</b> Set Contour Line Interval</a></li>
+<li class="chapter" data-level="5.2" data-path="cover_analysis.html"><a href="cover_analysis.html#read-data"><i class="fa fa-check"></i><b>5.2</b> Read Data</a>
 <ul>
-<li><a href="cover_analysis.html#data-preparation" id="toc-data-preparation"><span class="toc-section-number">5.2.1</span> Data Preparation<span></span></a></li>
-<li><a href="cover_analysis.html#read-naip-data" id="toc-read-naip-data"><span class="toc-section-number">5.2.2</span> Read NAIP Data<span></span></a></li>
+<li class="chapter" data-level="5.2.1" data-path="cover_analysis.html"><a href="cover_analysis.html#data-preparation"><i class="fa fa-check"></i><b>5.2.1</b> Data Preparation</a></li>
+<li class="chapter" data-level="5.2.2" data-path="cover_analysis.html"><a href="cover_analysis.html#read-naip-data"><i class="fa fa-check"></i><b>5.2.2</b> Read NAIP Data</a></li>
 </ul></li>
-<li><a href="cover_analysis.html#post-lidar-acquisition-treatment" id="toc-post-lidar-acquisition-treatment"><span class="toc-section-number">5.3</span> Post-Lidar Acquisition Treatment<span></span></a>
+<li class="chapter" data-level="5.3" data-path="cover_analysis.html"><a href="cover_analysis.html#post-lidar-acquisition-treatment"><i class="fa fa-check"></i><b>5.3</b> Post-Lidar Acquisition Treatment</a>
 <ul>
-<li><a href="cover_analysis.html#join-treatments-to-rx-fire-units" id="toc-join-treatments-to-rx-fire-units"><span class="toc-section-number">5.3.1</span> Join Treatments to Rx Fire Units<span></span></a></li>
+<li class="chapter" data-level="5.3.1" data-path="cover_analysis.html"><a href="cover_analysis.html#join-treatments-to-rx-fire-units"><i class="fa fa-check"></i><b>5.3.1</b> Join Treatments to Rx Fire Units</a></li>
 </ul></li>
-<li><a href="cover_analysis.html#forest-cover-summary" id="toc-forest-cover-summary"><span class="toc-section-number">5.4</span> Forest Cover Summary<span></span></a></li>
-<li><a href="cover_analysis.html#total-area-by-crown-group-class" id="toc-total-area-by-crown-group-class"><span class="toc-section-number">5.5</span> Total Area by Crown Group Class<span></span></a></li>
-<li><a href="cover_analysis.html#no-treatment-post-lidar-area-by-crown-group-class" id="toc-no-treatment-post-lidar-area-by-crown-group-class"><span class="toc-section-number">5.6</span> No Treatment Post-Lidar Area by Crown Group Class<span></span></a></li>
-<li><a href="cover_analysis.html#spatial-arrangement-by-crown-group-class" id="toc-spatial-arrangement-by-crown-group-class"><span class="toc-section-number">5.7</span> Spatial Arrangement by Crown Group Class<span></span></a></li>
-<li><a href="cover_analysis.html#rx-fire-unit-summary" id="toc-rx-fire-unit-summary"><span class="toc-section-number">5.8</span> Rx Fire Unit Summary<span></span></a>
+<li class="chapter" data-level="5.4" data-path="cover_analysis.html"><a href="cover_analysis.html#forest-cover-summary"><i class="fa fa-check"></i><b>5.4</b> Forest Cover Summary</a></li>
+<li class="chapter" data-level="5.5" data-path="cover_analysis.html"><a href="cover_analysis.html#total-area-by-crown-group-class"><i class="fa fa-check"></i><b>5.5</b> Total Area by Crown Group Class</a></li>
+<li class="chapter" data-level="5.6" data-path="cover_analysis.html"><a href="cover_analysis.html#no-treatment-post-lidar-area-by-crown-group-class"><i class="fa fa-check"></i><b>5.6</b> No Treatment Post-Lidar Area by Crown Group Class</a></li>
+<li class="chapter" data-level="5.7" data-path="cover_analysis.html"><a href="cover_analysis.html#spatial-arrangement-by-crown-group-class"><i class="fa fa-check"></i><b>5.7</b> Spatial Arrangement by Crown Group Class</a></li>
+<li class="chapter" data-level="5.8" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-summary"><i class="fa fa-check"></i><b>5.8</b> Rx Fire Unit Summary</a>
 <ul>
-<li><a href="cover_analysis.html#rx-fire-unit-cover-class" id="toc-rx-fire-unit-cover-class"><span class="toc-section-number">5.8.1</span> Rx Fire Unit Cover Class<span></span></a></li>
-<li><a href="cover_analysis.html#rx-fire-unit-cover-map" id="toc-rx-fire-unit-cover-map"><span class="toc-section-number">5.8.2</span> Rx Fire Unit Cover Map<span></span></a></li>
-<li><a href="cover_analysis.html#rx-fire-unit-contour" id="toc-rx-fire-unit-contour"><span class="toc-section-number">5.8.3</span> Rx Fire Unit Contour<span></span></a></li>
-<li><a href="cover_analysis.html#rx-fire-unit-insert" id="toc-rx-fire-unit-insert"><span class="toc-section-number">5.8.4</span> Rx Fire Unit Insert<span></span></a></li>
+<li class="chapter" data-level="5.8.1" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-cover-class"><i class="fa fa-check"></i><b>5.8.1</b> Rx Fire Unit Cover Class</a></li>
+<li class="chapter" data-level="5.8.2" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-cover-map"><i class="fa fa-check"></i><b>5.8.2</b> Rx Fire Unit Cover Map</a></li>
+<li class="chapter" data-level="5.8.3" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-contour"><i class="fa fa-check"></i><b>5.8.3</b> Rx Fire Unit Contour</a></li>
+<li class="chapter" data-level="5.8.4" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-insert"><i class="fa fa-check"></i><b>5.8.4</b> Rx Fire Unit Insert</a></li>
 </ul></li>
-<li><a href="cover_analysis.html#rx-fire-info-sheets" id="toc-rx-fire-info-sheets"><span class="toc-section-number">5.9</span> Rx Fire Info Sheets<span></span></a></li>
-<li><a href="cover_analysis.html#rx-fire-info-packet" id="toc-rx-fire-info-packet"><span class="toc-section-number">5.10</span> Rx Fire Info Packet<span></span></a></li>
+<li class="chapter" data-level="5.9" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-sheets"><i class="fa fa-check"></i><b>5.9</b> Rx Fire Info Sheets</a></li>
+<li class="chapter" data-level="5.10" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-packet"><i class="fa fa-check"></i><b>5.10</b> Rx Fire Info Packet</a></li>
 </ul></li>
 </ul>
 
@@ -239,10 +239,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="header">
 <h1 class="title">Black Hills Experimental Forest Prescribed Fire Planning</h1>
 <p class="author"><em>George Woolsey</em></p>
-<p class="date"><em>2022-08-26</em></p>
+<p class="date"><em>2023-05-31</em></p>
 </div>
 <div id="introduction" class="section level1 hasAnchor" number="1">
-<h1><span class="header-section-number">Chapter 1</span> Introduction<a href="index.html#introduction" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<h1><span class="header-section-number">Section 1</span> Introduction<a href="index.html#introduction" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>My name is George Woolsey and I am currently employed by the United States Forest Service working with <a href="https://www.fs.usda.gov/rmrs/people/mbattaglia">Dr. Mike Battaglia</a> at the <a href="https://www.fs.usda.gov/rmrs/">Rocky Mountain Research Station</a> in Fort Collins, Colorado. In addition, I am pursuing a MS in Forest Sciences at Colorado State University (CSU). At CSU I am working with Dr. Wade Tinkham in the <a href="https://sites.warnercnr.colostate.edu/wtinkham/">Forest Biometrics Lab</a>.</p>
 </div>
             </section>

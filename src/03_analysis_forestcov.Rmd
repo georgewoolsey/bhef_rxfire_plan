@@ -19,7 +19,7 @@ library(grid)
 # spatial
 library(sf)
 library(stars)
-
+library(terra)
 ```
 
 ```{r, warning=F, message=F, results='hide'}
@@ -156,7 +156,7 @@ naip_rgb <- stars::st_rgb(
 
 Lidar data was collected in 2017. Spatially identify areas within BHEF where timber harvest and TSI treatments occurred in 2017 or later. 
 
-```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
+```{r, warning=F, message=F, results='hide', fig.width = 10, fig.height = 6}
 # find harvests after lidar collection
 temp_harvests <- bhef_harvests %>% 
   dplyr::filter(year_id >= 2017) %>%
@@ -201,6 +201,7 @@ ggplot() +
   geom_sf(data = harvests_post_lidar
       , aes(fill = treatment_type_grp)
       , lwd = 0
+      , alpha = 0.8
     ) +
   geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
   geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
@@ -214,7 +215,8 @@ ggplot() +
   #   , alpha = 0
   #   , size = 2.5
   # ) +
-  scale_fill_viridis_d(option = "viridis", alpha = 0.8) + 
+  coord_sf(expand = F) +
+  scale_fill_viridis_d(option = "viridis") + 
   labs(
     title = "BHEF Post-Lidar Acquisition Timber Harvests & TSI"
     , subtitle = paste0("Rx fire units")
@@ -230,11 +232,11 @@ ggplot() +
   ylab("") +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  theme_bw() +
+  theme_light() +
   theme(
     legend.position = "bottom"
     , legend.title = element_blank()
-    , axis.text = element_text(size = 8)
+    , axis.text = element_text(size = 7)
     , panel.border = element_blank()
     , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
     , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
@@ -575,7 +577,7 @@ gc()
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 6}
 # function to map for each cover class
-my_full_area_map <- function(my_data, my_class){
+my_full_area_map <- function(my_class,my_data){
   #generate title
   my_title <- paste0(my_class)
   my_caption <- paste0(
@@ -600,13 +602,14 @@ my_full_area_map <- function(my_data, my_class){
         , alpha = 0
         , size = 2
       ) +
+      coord_sf(expand = F) +
       labs(
         title = my_title
         , subtitle = "Spatial Arrangement on BHEF"
         , caption = my_caption
+        , x = ""
+        , y = ""
       ) +
-      xlab("") +
-      ylab("") +
       scale_x_continuous(expand = c(0, 0)) +
       scale_y_continuous(expand = c(0, 0)) +
       theme_bw() +
@@ -614,7 +617,7 @@ my_full_area_map <- function(my_data, my_class){
         legend.position = "none"
         , legend.direction = "horizontal"
         , legend.title = element_blank()
-        , axis.text = element_text(size = 8)
+        , axis.text = element_text(size = 7)
         , panel.border = element_blank()
         , plot.title = element_text(size = 12, face = "bold", margin = margin(0,0,2,0))
         , plot.subtitle = element_text(size=10, color="gray20", margin = margin(0,0,0,0))
@@ -624,17 +627,9 @@ my_full_area_map <- function(my_data, my_class){
   )
 }
 
-# plot with loop to create a plot for each class
-my_classes <- sort(unique(crowns_group$crown_group_class))
-for (i in 1:length(my_classes)) {
-# for (i in 1:3) {
-  print( 
-    my_full_area_map(
-      my_data = crowns_group %>% sf::st_intersection(bhef_boundary)
-      , my_class = my_classes[i]
-    ) 
-  )
-}
+sort(unique(crowns_group$crown_group_class)) %>% 
+  purrr::map(my_full_area_map, my_data = crowns_group %>% sf::st_intersection(bhef_boundary))
+
 ```
 
 ## Rx Fire Unit Summary
@@ -805,35 +800,35 @@ plot_cover_class_bars <- function(my_unit){
       geom_text(
         aes(
           y = reorder(crown_group_class, desc(crown_group_class))
-          , x = area_ha + 0.5
+          , x = area_ha
           , label = scales::comma(area_ha, accuracy = 1)
         )
         , color = "black"
         , size = 3
         , fontface = "bold"
         # , position = position_dodge(0.9)
-        , hjust = 0.6
-        , vjust = -0.3
+        , hjust = -0.1
+        , vjust = -0.2
       ) +
       geom_text(
         aes(
           y = reorder(crown_group_class, desc(crown_group_class))
-          , x = area_ha + 0.5
+          , x = area_ha
           , label = scales::percent(pct_area, accuracy = 1)
         )
         , color = "black"
-        , size = 2.5
+        , size = 2
         # , position = position_dodge(0.9)
-        , hjust = 0.4
-        , vjust = 0.7
+        , hjust = -0.1
+        , vjust = 0.9
       ) +
       labs(
           # title = paste0("Rx Fire Unit: ", my_unit)
           subtitle = "Area (ha) by Crown Group Class"
+          , x = "Area (ha)"
+          , y = ""
         ) +
-      xlab("Area (ha)") +
-      ylab("") +
-      scale_x_continuous(labels = scales::comma) +
+      scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
       theme_bw() +
       theme(
         legend.position = "none"
@@ -845,7 +840,7 @@ plot_cover_class_bars <- function(my_unit){
       )
   )
 }
-# print(plot_cover_class_bars(my_unit = rx_fire$unit[11]))
+# print(plot_cover_class_bars(my_unit = rx_fire$unit[8]))
 ```
 
 ### Rx Fire Unit Cover Map
@@ -922,14 +917,15 @@ plot_cover_class_map <- function(my_unit){
         legend.position = "none"
         , legend.direction = "horizontal"
         , legend.title = element_blank()
-        , axis.text = element_text(size = 8)
+        , axis.text = element_text(size = 7)
+        , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
         , panel.border = element_blank()
         , plot.title = element_text(size = 14, face = "bold", margin = margin(0,0,2,0))
         , plot.subtitle = element_text(size=9, face="bold.italic", color="blue", margin = margin(0,0,0,0))
       )
   )
 }
-# print(plot_cover_class_map(my_unit = rx_fire$unit[15]))
+# print(plot_cover_class_map(my_unit = rx_fire$unit[1]))
 ```
 
 ### Rx Fire Unit Contour
@@ -944,12 +940,25 @@ plot_contour_map <- function(my_unit){
     #########################################
     # plot
     ggplot() +
-      stars::geom_stars(data = bhef_elev[
-        rx_fire %>% dplyr::filter(unit == my_unit) %>% 
-        sf::st_buffer(dist = 50) %>% 
-        sf::st_bbox()
-      ]) +
-      scale_fill_viridis_c(option = "viridis", alpha = 0.9, na.value = "transparent") +
+      geom_raster(
+        data = bhef_elev %>% 
+          terra::rast() %>% 
+          terra::crop(
+            rx_fire %>% dplyr::filter(unit == my_unit) %>% 
+              sf::st_buffer(dist = 50) %>% 
+              sf::st_bbox() %>% 
+              sf::st_as_sfc() %>% 
+              terra::vect()
+          ) %>% 
+          as.data.frame(xy=T) %>% 
+          dplyr::rename(elev = 3)
+        , mapping = aes(x=x,y=y,fill=elev)
+      ) +
+      # stars::geom_stars(data = bhef_elev[
+      #   rx_fire %>% dplyr::filter(unit == my_unit) %>% 
+      #   sf::st_buffer(dist = 50) %>% 
+      #   sf::st_bbox()
+      # ]) +
       geom_sf(data = bhef_contour %>% 
         sf::st_crop(
           rx_fire %>% dplyr::filter(unit == my_unit) %>% 
@@ -968,6 +977,15 @@ plot_contour_map <- function(my_unit){
           , color = "orangered"
           , show.legend = FALSE
       ) +
+      scale_fill_viridis_c(
+        option = "viridis"
+        , alpha = 0.9
+        , na.value = "transparent"
+        , breaks = scales::extended_breaks(n = 6)
+        , labels = scales::comma
+      ) +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
       labs(
         subtitle = paste0("Contour lines are at "
                           , as.character(contour_int_m)
@@ -975,30 +993,27 @@ plot_contour_map <- function(my_unit){
                           , as.character(round(contour_int_m * 3.281, 1))
                           , "-ft) intervals"
           )
+        , fill = "Elev. (m)"
+        , x = ""
+        , y = ""
       ) +
-      xlab("") +
-      ylab("") +
-      scale_x_continuous(expand = c(0, 0)) +
-      scale_y_continuous(expand = c(0, 0)) +
       theme_bw() +
       theme(
         legend.position = "bottom"
         , legend.direction = "horizontal"
         , legend.margin = margin(0,0,0,0)
         , legend.box.margin = margin(-21,0,2,0)
-        , legend.text = element_text(size = 7)
+        , legend.text = element_text(size = 7, angle = 25, hjust = 0.7)
         , legend.title = element_text(size = 7)
-        , axis.text.y = element_text(size = 7)
-        , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
+        , axis.text = element_blank()
+        # , axis.text.y = element_text(size = 7)
+        # , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
         , panel.border = element_blank()
         , plot.subtitle = element_text(size=9, face="italic", color="gray20", margin = margin(0,0,0,0))
-      ) +
-      guides(
-        fill = guide_legend(title="Elev. (m)")
       )
   )
 }
-# print(plot_contour_map(my_unit = rx_fire$unit[10]))
+# print(plot_contour_map(my_unit = rx_fire$unit[1]))
 ```
 
 ### Rx Fire Unit Insert

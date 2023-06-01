@@ -166,11 +166,21 @@ ggplot() +
     # final export
     ##########################
     wss_soil_export <- wss_soil |> 
+      # transform
+      sf::st_transform(crs = transform_crs) |> 
+      # union polys
+      dplyr::group_by(
+        musym,mukey
+      ) |> 
+      dplyr::summarise(
+        geometry = sf::st_union(geometry)
+      ) |> 
+      dplyr::ungroup() |> 
       # join mapunit table
       dplyr::left_join(
         bhef_get_ssurgo$tabular$mapunit |> 
-          dplyr::mutate(mukey=as.character(mukey), muarea_ha = muacres/2.471) |> 
-          dplyr::select(mukey, muname, mukind, muarea_ha, interpfocus, lkey)
+          dplyr::mutate(mukey=as.character(mukey)) |> 
+          dplyr::select(mukey, muname, mukind, interpfocus, lkey)
         , by = c("mukey"="mukey")
       ) |> 
       # join to components & horizons
@@ -186,16 +196,19 @@ ggplot() +
           dplyr::ungroup()
         , by = c("mukey"="mukey")
       ) |> 
-      # transform
-      sf::st_transform(crs = transform_crs) |> 
       # intersection
       sf::st_intersection(
         bhef_boundary |> 
         dplyr::mutate(exp_forest_area_ha = as.numeric(sf::st_area(bhef_boundary)/10000)) |> 
         dplyr::select(name, type, station, land_ownership, lead_scientist, exp_forest_area_ha)
+      ) |> 
+      dplyr::mutate(
+        muarea_ha = round(as.numeric(sf::st_area(geometry)/10000),3)
+        , mu_pct_area = round(muarea_ha/exp_forest_area_ha,3)
       )
 # export
-sf::st_write(wss_soil_export, "../data/bhef_wss_soil.gpkg")
+sf::st_write(wss_soil_export, "../data/bhef_wss_soil.gpkg", append = F)
+
 ```
 
 plot export data
