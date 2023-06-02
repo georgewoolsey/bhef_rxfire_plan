@@ -1,4 +1,4 @@
-# Forest Cover Analysis {#cover_analysis}
+# Sample by Canopy Cover and HLI {#sample_canopycov_hli}
 
 ```{r, include=FALSE, warning=F, message=F}
 # knit options
@@ -153,7 +153,7 @@ remove(list = ls()[grep("_temp",ls())])
 gc()
 ```
 
-## Tree Crown Cover
+## Tree Canopy Cover
 
 The tree crown raster data represents tree crowns (interconnected crown groups or individual crowns) with minimum tree height of 2 meters was created [here](#itc) using `lidR::dalponte2016`. Values of this raster are tree crown id's. 
 
@@ -307,7 +307,86 @@ remove(list = ls()[grep("_temp",ls())])
 gc()
 ```
 
-## Classify and Sample
+## Classify Raster Grid
+
+### Cutpoints
+
+```{r}
+cutlist <- seq(0,1,0.2)
+# cutlist_df_temp <- 
+  data.frame(
+    hli = stats::quantile(
+        layers$hli %>% terra::values()
+        , probs = cutlist
+        , na.rm = T
+      )
+    , crowncov = stats::quantile(
+        layers$crowncov %>% terra::values()
+        , probs = cutlist
+        , na.rm = T
+      )
+  ) %>% 
+  tibble::rownames_to_column(var="pct") %>% 
+  tidyr::pivot_longer(
+    cols = c(hli,crowncov)
+  ) %>% 
+  dplyr::group_by(name) %>% 
+  dplyr::mutate(
+    pct_n = readr::parse_number(pct)
+  ) %>% 
+  dplyr::arrange(name,pct_n) %>% 
+  dplyr::mutate(
+    n = dplyr::row_number()-1
+    , value_1 = dplyr::lag(value)
+  ) %>% 
+  dplyr::filter(n>0) %>% 
+  dplyr::mutate(
+    f = factor(
+      n
+      , levels = 1:5
+      , labels = c("low","med.low","medium","med.high","high")
+      , ordered = T
+    )
+    , lab = dplyr::case_when(
+      name == "hli" ~ scales::comma(value, accuracy = 0.01)
+      , name == "crowncov" ~ scales::percent(value, accuracy = 1)
+    )
+    , lab_1 = dplyr::case_when(
+      name == "hli" ~ scales::comma(value_1, accuracy = 0.01)
+      , name == "crowncov" ~ scales::percent(value_1, accuracy = 1)
+    )
+    , name = dplyr::case_when(
+      name == "hli" ~ "HLI"
+      , name == "crowncov" ~ "Canopy Cover"
+    )
+  ) %>% 
+ggplot(mapping = aes(y=f,x = (value_1+value)/2)) +
+  geom_errorbar(mapping = aes(xmin=value_1,xmax=value,color=f)) +
+  geom_point(mapping = aes(color = f)) +
+  geom_text(mapping = aes(label = paste0(lab_1,"\nto ",lab))
+            , size = 3
+            , hjust = 0
+            , vjust = -0.5
+  ) +
+  facet_grid(cols = vars(name), scales = "free_x") +
+  scale_color_viridis_d(option="turbo") +
+  scale_y_discrete(limits=rev) +
+  labs(
+    x = ""
+    , y = "Grouping"
+  ) +
+  theme_light() +
+  theme(
+    legend.position = "none"
+    , axis.text.x = element_blank()
+    , axis.title.x = element_blank()
+    , axis.line.x = element_blank()
+    , strip.text = element_text(color="black", face="bold", size=11)
+  )
+
+```
+
+### Canopy Cover and HLI Group Map
 
 ```{r class-create}
 rast_grp_class_fn <- function(layer_n, pct_cut_list = seq(0,1,0.2)) {
@@ -414,6 +493,7 @@ cowplot::plot_grid(
 )
 ```
 
+
 ### Map of grouped Canopy Cover and HLI
 
 ```{r mapview-grp, results='asis'}
@@ -447,48 +527,52 @@ mapview::mapview(
 
 ```{r class-combine}
 # combine layers for classification
-  concat_rast <-terra::concats(layers_grp[[1]], layers_grp[[2]]) %>% 
-    setNames(
-      (layers %>% names() %>% paste(collapse = "_"))
-    )
+concat_rast <- terra::concats(layers_grp[[1]], layers_grp[[2]]) %>% 
+  setNames(
+    (layers %>% names() %>% paste(collapse = "_"))
+  )
 # data_frame
-concat_df <- concat_rast %>%
-    as.data.frame(xy=T) %>% 
-    separate_wider_delim(
-      crowncov_hli
-      , delim = "_"
-      , names=c("crowncov", "hli")
-      , cols_remove = F
-    ) %>% 
-    dplyr::mutate(
-      crowncov_hli_filter = forcats::fct_other(
-        f = crowncov_hli
-        , keep = c(
-          "1_1","1_3","1_5"
-          , "3_1","3_3","3_5"
-          , "5_1","5_3","5_5"
-        )
-        , other_level = "other"
+concat_sf <- c(
+    concat_rast
+    , layers
+  ) %>% 
+  terra::as.points() %>% 
+  sf::st_as_sf(crs = sf::st_crs(bhef_boundary)) %>% 
+  dplyr::mutate(
+    x = sf::st_coordinates(geometry)[,1] #lon
+    , y = sf::st_coordinates(geometry)[,2] #lat
+    , crowncov_grp = stringr::str_split_i(crowncov_hli, "_", 1)
+    , hli_grp = stringr::str_split_i(crowncov_hli, "_", 2)
+    , crowncov_hli_filter = forcats::fct_other(
+      f = crowncov_hli
+      , keep = c(
+        "1_1","1_3","1_5"
+        , "3_1","3_3","3_5"
+        , "5_1","5_3","5_5"
       )
-      , dplyr::across(
-          c(crowncov,hli)
-          , ~ factor(
-              .x
-              , levels = 1:5
-              , labels = c("low","med.low","medium","med.high","high")
-              , ordered = T
-            )
+      , other_level = "other"
+    )
+    , dplyr::across(
+      c(crowncov_grp,hli_grp)
+      , ~ factor(
+          .x
+          , levels = 1:5
+          , labels = c("low","med.low","medium","med.high","high")
+          , ordered = T
         )
-      , lat = y
-      , lon = x
-    ) %>% 
-    # points
-    sf::st_as_sf(coords=c("lat","lon"),crs=terra::crs(crowns_rast))
+    )
+  ) %>% 
+  sf::st_intersection(
+    rx_fire %>% 
+      dplyr::select(unit) %>% 
+      dplyr::rename(rx_fire_unit = unit)
+  )
 # plot
-   concat_df %>% 
+   concat_sf %>% 
     dplyr::filter(crowncov_hli_filter!="other") %>% 
     ggplot() + 
       geom_tile(aes(x=x,y=y,fill=crowncov_hli_filter)) +
+      # geom_sf(size = 0.2) +
       geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
       geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
       geom_sf_label(data = rx_fire, aes(label = unit)
@@ -524,20 +608,206 @@ concat_df <- concat_rast %>%
       guides(fill=guide_legend(nrow=3,byrow=TRUE))
 ```
 
+### Example Rx Fire Unit
+
+```{r ex-covhli}
+unit_temp <- "22"
+# plot
+   concat_sf %>% 
+    dplyr::filter(crowncov_hli_filter!="other" & rx_fire_unit==unit_temp) %>% 
+    ggplot() + 
+      geom_tile(aes(x=x,y=y,fill=crowncov_hli_filter)) +
+      geom_sf(size = 0.2, color = "gray22") +
+      geom_sf(data = rx_fire %>% dplyr::filter(unit==unit_temp)
+              , alpha = 0, lwd = 1, color = "orangered"
+      ) +
+      coord_sf(expand = F) +
+      scale_fill_viridis_d(option = "turbo", alpha = 0.8) + 
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      labs(
+          title = "Canopy Cover (1=low,3=med,5=hi)\nx HLI (1=low,3=med,5=hi)"
+          , subtitle = paste0("Rx fire unit ", unit_temp)
+          , x=""
+          , y=""
+          , fill = "Canopy_HLI"
+        ) +
+      theme_light() +
+      theme(
+        legend.position = "top"
+        , legend.direction = "horizontal"
+        , legend.margin = margin(0,0,0,0)
+        # , legend.box.margin = margin(-21,0,2,0)
+        , legend.text = element_text(size = 7)
+        , legend.title = element_text(size = 7)
+        , axis.text = element_text(size = 7)
+        , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
+        , plot.title = element_text(size = 10, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
+        , panel.border = element_blank()
+      ) + 
+      guides(fill=guide_legend(nrow=3,byrow=TRUE))
+```
+
+### Distribution of Canopy Cover and HLI by Rx Fire Unit
+
+```{r dist-crcov-hli-unit}
+dist_temp <- 
+  concat_sf %>% 
+    sf::st_drop_geometry() %>% 
+    dplyr::count(rx_fire_unit, crowncov_hli_filter) %>% 
+    dplyr::group_by(rx_fire_unit) %>% 
+    dplyr::mutate(
+      pct = n/sum(n)
+      , tot = sum(n)
+      , crowncov_hli_filter = crowncov_hli_filter %>% forcats::fct_rev()
+    ) %>% 
+    dplyr::ungroup()
+# plot
+ggplot(data=dist_temp) +
+  geom_col(
+    mapping = aes(x = pct, y = rx_fire_unit, fill=crowncov_hli_filter)
+    ,width = 0.7, alpha=0.8
+  ) +
+  geom_text(
+    mapping = aes(x = pct, y = rx_fire_unit, group=crowncov_hli_filter
+        ,label = scales::percent(ifelse(pct>=0.05,pct,NA), accuracy = 1)
+        , fontface = "bold"
+      )
+    , position = position_stack(vjust = 0.5)
+    , color = "black", size = 2.8
+  ) +
+  geom_text(
+    data = dist_temp %>% dplyr::group_by(rx_fire_unit) %>% dplyr::filter(dplyr::row_number()==1)
+    , mapping = aes(x = -0.02, y = rx_fire_unit
+        ,label = 
+          paste0("n="
+            ,scales::comma(tot, accuracy = 1)
+          )
+      )
+      , size = 3
+      , color = "black"
+      , hjust = 0.7
+  ) +
+  # scale_fill_brewer(type = "div", palette = "RdYlBu", direction = -1) +
+  scale_fill_manual(values = rev(c(
+    viridis::turbo(
+      n= ((dist_temp %>% dplyr::count(crowncov_hli_filter) %>% nrow())-1)
+    )
+    , "gray"
+  ))) +
+  scale_x_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Canopy Cover (1=low,3=med,5=hi)\nx HLI (1=low,3=med,5=hi)"
+    , fill = "Canopy_HLI"
+    , y = "Rx Fire Unit"
+    , x = latex2exp::TeX(paste0("% of Sample Plots (", agg_res,"$\\textrm{m}^2$",")"))
+    # , caption = nlab_temp
+  ) +
+  theme_light() +
+  theme(
+    legend.position = "top"
+    , legend.title = element_text(size=7)
+    , legend.direction = "horizontal"
+    , legend.margin = margin(0,0,0,0)
+    , axis.title = element_text(size=9)
+    , axis.text.x = element_text(size=7)
+    , strip.text = element_text(color = "black", face = "bold")
+    , plot.title = element_text(size = 9)
+  ) + 
+  guides(
+    fill = guide_legend(reverse = T, override.aes = list(alpha = 0.9), nrow = 4, byrow = T)
+  )
+```
+
+### Matrix of Canopy Cover and HLI by Rx Fire Unit
+
+```{r matrix-crcov-hli-unit, fig.height=14}
+concat_sf %>% 
+    sf::st_drop_geometry() %>% 
+    dplyr::filter(crowncov_hli_filter!="other") %>% 
+    dplyr::count(rx_fire_unit, crowncov_grp, hli_grp, crowncov_hli_filter) %>% 
+    dplyr::group_by(rx_fire_unit) %>% 
+    dplyr::mutate(
+      pct = n/sum(n)
+      , tot = sum(n)
+    ) %>% 
+    dplyr::ungroup() %>% 
+    # dplyr::filter(rx_fire_unit %in% c("1","11","22")) %>% 
+    dplyr::mutate(rx_fire_unit = paste0("unit ",rx_fire_unit)) %>%
+ggplot(
+    mapping = aes(y = crowncov_grp, x = hli_grp)
+  ) +
+  geom_tile(aes(fill = crowncov_hli_filter), color = "white",alpha=0.8) +
+  geom_text(aes(label = scales::comma(n,accuracy=1)), vjust = 0.5,size = 3) +
+  geom_text(aes(label = scales::percent(pct,accuracy=0.1)), vjust = 2, size=2) +
+  facet_grid(
+    rows = vars(rx_fire_unit)
+    # , switch = "y"
+  ) +
+  scale_fill_viridis_d(option = "turbo") +
+  scale_x_discrete(position = "top") +
+  scale_y_discrete(limits = rev) +
+  labs(
+    y = "Canopy Cover"
+    , x = "HLI"
+    , title = latex2exp::TeX(paste0("Matrix of Sample Plots (", agg_res,"$\\textrm{m}^2$",")"))
+  ) +
+  theme_light() + 
+  theme(
+    legend.position = "none"
+    , panel.grid = element_blank()
+    , plot.title = element_text(size = 9)
+    , strip.text.y = element_text(angle = 0)
+    , axis.title = element_text(face = "bold", size = 12)
+    # , strip.placement = "outside"
+  )
+```
+
+The figure above excludes plots with a classification other than the Canopy Cover and HLI classes shown (e.g. HLI = med. low, Canopy Cover = med. high).
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
 remove(list = ls()[grep("_temp",ls())])
 gc()
+```
 
-concat_df %>% str()
+## Sample Order and Export
 
-ggplot(
-  data = concat_df %>% 
-    sf::st_filter(
-      bhef_boundary %>% 
-        sf::st_centroid() %>% 
-        sf::st_buffer(20)
+```{r samp-exp}
+set.seed(11)
+concat_sf <- concat_sf %>%
+  dplyr::ungroup() %>% 
+  dplyr::relocate(rx_fire_unit) %>% 
+  dplyr::mutate(rand=runif(dplyr::row_number())) %>% 
+  dplyr::arrange(rx_fire_unit, crowncov_hli_filter, desc(rand)) %>% 
+  dplyr::group_by(rx_fire_unit, crowncov_hli_filter) %>% 
+  dplyr::mutate(sample_number = dplyr::row_number()) %>% 
+  dplyr::select(-c(rand)) %>% 
+  dplyr::ungroup()
+# export
+sf::st_write(
+  concat_sf %>% 
+    dplyr::filter(
+      crowncov_hli_filter!="other"
+      & sample_number <= 30
     )
-) + 
-  geom_sf(mapping = aes(color = crowncov_hli_filter), shape = ".")
+  ,"../data/bhef_rxfire_hli_canopycov_samplepoints.gpkg"
+  , append = F
+)
+write.csv(
+  concat_sf %>% 
+    sf::st_drop_geometry() %>% 
+    dplyr::filter(
+      crowncov_hli_filter!="other"
+      & sample_number <= 30
+    )
+  ,"../data/bhef_rxfire_hli_canopycov_samplepoints.csv"
+  , append = F
+)
+```
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
+remove(list = ls()[grep("_temp",ls())])
+gc()
 ```

@@ -31,7 +31,7 @@ chm-plot
 individual-tree-detection-itd
 tree-tops-plot
 distribution-of-tree-top-heights
-individual-tree-crown-itc-segmentation
+itc
 lidar-derived-crown-groups-summary
 cg_sum
 map-crowns-and-rx-fire-area
@@ -54,3 +54,17 @@ rx-fire-unit-contour
 rx-fire-unit-insert
 rx-fire-info-sheets
 rx-fire-info-packet
+sample_canopycov_hli
+read-data-1
+hli
+tree-canopy-cover
+aggregate-and-crop-to-rx-fire-units
+classify-raster-grid
+cutpoints
+canopy-cover-and-hli-group-map
+map-of-grouped-canopy-cover-and-hli
+combine-grouped-canopy-cover-and-hli
+example-rx-fire-unit
+distribution-of-canopy-cover-and-hli-by-rx-fire-unit
+matrix-of-canopy-cover-and-hli-by-rx-fire-unit
+sample-order-and-export

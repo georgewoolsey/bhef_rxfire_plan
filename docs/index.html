@@ -23,7 +23,7 @@
 <meta name="author" content="George Woolsey" />
 
 
-<meta name="date" content="2023-05-31" />
+<meta name="date" content="2023-06-02" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -67,6 +67,34 @@
 <script src="libs/clipboard-0.0.1/setClipboardText.js"></script>
 <link href="libs/mapviewCSS-0.0.1/mapview-popup.css" rel="stylesheet" />
 <link href="libs/mapviewCSS-0.0.1/mapview.css" rel="stylesheet" />
+<script src="libs/crowncov_476fd9-1/data_stars_crowncovae4698.txt"></script>
+<script src="libs/joda-0.0.1/joda.js"></script>
+<script src="libs/joda-0.0.1/addImageQuery-bindings.js"></script>
+<script src="libs/hli_d958bf-1/data_stars_hli51e67b.txt"></script>
+<script type="text/javascript">
+
+// toggle visibility of R source blocks in R Markdown output
+function toggle_R() {
+  var x = document.getElementsByClassName('r');
+  if (x.length == 0) return;
+  function toggle_vis(o) {
+    var d = o.style.display;
+    o.style.display = (d == 'block' || d == '') ? 'none':'block';
+  }
+
+  for (i = 0; i < x.length; i++) {
+    var y = x[i];
+    if (y.tagName.toLowerCase() === 'pre') toggle_vis(y);
+  }
+
+    var elem = document.getElementById("myButton1");
+    if (elem.value === "Hide Code") elem.value = "Show Code";
+    else elem.value = "Hide Code";
+}
+
+document.write('<input onclick="toggle_R();" type="button" value="Hide Code" id="myButton1" style="position: absolute; top: 10%; right: 2%; z-index: 200"></input>')
+
+</script>
 
 
 <style type="text/css">
@@ -184,7 +212,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="4.5.1" data-path="lidar_data.html"><a href="lidar_data.html#height-normalization-using-dem"><i class="fa fa-check"></i><b>4.5.1</b> Height normalization using DEM</a></li>
 <li class="chapter" data-level="4.5.2" data-path="lidar_data.html"><a href="lidar_data.html#canopy-height-model"><i class="fa fa-check"></i><b>4.5.2</b> Canopy Height model</a></li>
 <li class="chapter" data-level="4.5.3" data-path="lidar_data.html"><a href="lidar_data.html#individual-tree-detection-itd"><i class="fa fa-check"></i><b>4.5.3</b> Individual Tree Detection (ITD)</a></li>
-<li class="chapter" data-level="4.5.4" data-path="lidar_data.html"><a href="lidar_data.html#individual-tree-crown-itc-segmentation"><i class="fa fa-check"></i><b>4.5.4</b> Individual Tree Crown (ITC) Segmentation</a></li>
+<li class="chapter" data-level="4.5.4" data-path="lidar_data.html"><a href="lidar_data.html#itc"><i class="fa fa-check"></i><b>4.5.4</b> Individual Tree Crown (ITC) Segmentation</a></li>
 </ul></li>
 <li class="chapter" data-level="4.6" data-path="lidar_data.html"><a href="lidar_data.html#lidar-derived-crown-groups-summary"><i class="fa fa-check"></i><b>4.6</b> Lidar-Derived Crown Groups Summary</a>
 <ul>
@@ -219,6 +247,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="5.9" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-sheets"><i class="fa fa-check"></i><b>5.9</b> Rx Fire Info Sheets</a></li>
 <li class="chapter" data-level="5.10" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-packet"><i class="fa fa-check"></i><b>5.10</b> Rx Fire Info Packet</a></li>
 </ul></li>
+<li class="chapter" data-level="6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html"><i class="fa fa-check"></i><b>6</b> Sample by Canopy Cover and HLI</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#read-data-1"><i class="fa fa-check"></i><b>6.1</b> Read Data</a></li>
+<li class="chapter" data-level="6.2" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#hli"><i class="fa fa-check"></i><b>6.2</b> Aspect and HLI</a></li>
+<li class="chapter" data-level="6.3" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#tree-canopy-cover"><i class="fa fa-check"></i><b>6.3</b> Tree Canopy Cover</a></li>
+<li class="chapter" data-level="6.4" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#aggregate-and-crop-to-rx-fire-units"><i class="fa fa-check"></i><b>6.4</b> Aggregate and Crop to Rx fire Units</a></li>
+<li class="chapter" data-level="6.5" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#classify-raster-grid"><i class="fa fa-check"></i><b>6.5</b> Classify Raster Grid</a>
+<ul>
+<li class="chapter" data-level="6.5.1" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#cutpoints"><i class="fa fa-check"></i><b>6.5.1</b> Cutpoints</a></li>
+<li class="chapter" data-level="6.5.2" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#canopy-cover-and-hli-group-map"><i class="fa fa-check"></i><b>6.5.2</b> Canopy Cover and HLI Group Map</a></li>
+<li class="chapter" data-level="6.5.3" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#map-of-grouped-canopy-cover-and-hli"><i class="fa fa-check"></i><b>6.5.3</b> Map of grouped Canopy Cover and HLI</a></li>
+<li class="chapter" data-level="6.5.4" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#combine-grouped-canopy-cover-and-hli"><i class="fa fa-check"></i><b>6.5.4</b> Combine Grouped Canopy Cover and HLI</a></li>
+<li class="chapter" data-level="6.5.5" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#example-rx-fire-unit"><i class="fa fa-check"></i><b>6.5.5</b> Example Rx Fire Unit</a></li>
+<li class="chapter" data-level="6.5.6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#distribution-of-canopy-cover-and-hli-by-rx-fire-unit"><i class="fa fa-check"></i><b>6.5.6</b> Distribution of Canopy Cover and HLI by Rx Fire Unit</a></li>
+<li class="chapter" data-level="6.5.7" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#matrix-of-canopy-cover-and-hli-by-rx-fire-unit"><i class="fa fa-check"></i><b>6.5.7</b> Matrix of Canopy Cover and HLI by Rx Fire Unit</a></li>
+</ul></li>
+<li class="chapter" data-level="6.6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#sample-order-and-export"><i class="fa fa-check"></i><b>6.6</b> Sample Order and Export</a></li>
+</ul></li>
 </ul>
 
       </nav>
@@ -239,7 +285,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="header">
 <h1 class="title">Black Hills Experimental Forest Prescribed Fire Planning</h1>
 <p class="author"><em>George Woolsey</em></p>
-<p class="date"><em>2023-05-31</em></p>
+<p class="date"><em>2023-06-02</em></p>
 </div>
 <div id="introduction" class="section level1 hasAnchor" number="1">
 <h1><span class="header-section-number">Section 1</span> Introduction<a href="index.html#introduction" class="anchor-section" aria-label="Anchor link to header"></a></h1>
@@ -305,6 +351,20 @@ gitbook.start({
 });
 </script>
 
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
 </body>
 
 </html>
