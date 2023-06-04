@@ -23,7 +23,7 @@
 <meta name="author" content="George Woolsey" />
 
 
-<meta name="date" content="2023-06-02" />
+<meta name="date" content="2023-06-04" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -52,8 +52,6 @@
 <link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
 <link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
 <script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
-<script src="libs/kePrint-0.0.1/kePrint.js"></script>
-<link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 <script src="libs/htmlwidgets-1.6.1/htmlwidgets.js"></script>
 <link href="libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
 <script src="libs/leaflet-1.3.1/leaflet.js"></script>
@@ -64,13 +62,13 @@
 <script src="libs/leaflet-binding-2.1.1/leaflet.js"></script>
 <script src="libs/leaflet-providers-1.9.0/leaflet-providers_1.9.0.js"></script>
 <script src="libs/leaflet-providers-plugin-2.1.1/leaflet-providers-plugin.js"></script>
+<script src="libs/crowncov_8b4c0a-1/data_stars_crowncovbea524.txt"></script>
+<script src="libs/joda-0.0.1/joda.js"></script>
+<script src="libs/joda-0.0.1/addImageQuery-bindings.js"></script>
 <script src="libs/clipboard-0.0.1/setClipboardText.js"></script>
 <link href="libs/mapviewCSS-0.0.1/mapview-popup.css" rel="stylesheet" />
 <link href="libs/mapviewCSS-0.0.1/mapview.css" rel="stylesheet" />
-<script src="libs/crowncov_476fd9-1/data_stars_crowncovae4698.txt"></script>
-<script src="libs/joda-0.0.1/joda.js"></script>
-<script src="libs/joda-0.0.1/addImageQuery-bindings.js"></script>
-<script src="libs/hli_d958bf-1/data_stars_hli51e67b.txt"></script>
+<script src="libs/hli_19bf8a-1/data_stars_hlia6923d.txt"></script>
 <script type="text/javascript">
 
 // toggle visibility of R source blocks in R Markdown output
@@ -176,94 +174,93 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <ul class="summary">
 <li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a></li>
-<li class="chapter" data-level="2" data-path="objective.html"><a href="objective.html"><i class="fa fa-check"></i><b>2</b> Objective</a></li>
-<li class="chapter" data-level="3" data-path="vector_data.html"><a href="vector_data.html"><i class="fa fa-check"></i><b>3</b> Import Vector Data</a>
+<li class="chapter" data-level="2" data-path="vector_data.html"><a href="vector_data.html"><i class="fa fa-check"></i><b>2</b> Import Vector Data</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="vector_data.html"><a href="vector_data.html#national-forest-management-data-download"><i class="fa fa-check"></i><b>3.1</b> National Forest Management data download</a></li>
-<li class="chapter" data-level="3.2" data-path="vector_data.html"><a href="vector_data.html#load-research-plot-data"><i class="fa fa-check"></i><b>3.2</b> Load Research Plot data</a></li>
-<li class="chapter" data-level="3.3" data-path="vector_data.html"><a href="vector_data.html#load-stem-map-data"><i class="fa fa-check"></i><b>3.3</b> Load Stem Map data</a></li>
-<li class="chapter" data-level="3.4" data-path="vector_data.html"><a href="vector_data.html#load-rx-fire-shapefile"><i class="fa fa-check"></i><b>3.4</b> Load Rx Fire shapefile</a></li>
-<li class="chapter" data-level="3.5" data-path="vector_data.html"><a href="vector_data.html#load-national-forests-shapefile"><i class="fa fa-check"></i><b>3.5</b> Load National Forests shapefile</a></li>
-<li class="chapter" data-level="3.6" data-path="vector_data.html"><a href="vector_data.html#load-experimental-forests-shapefile"><i class="fa fa-check"></i><b>3.6</b> Load Experimental Forests shapefile</a></li>
-<li class="chapter" data-level="3.7" data-path="vector_data.html"><a href="vector_data.html#tsi"><i class="fa fa-check"></i><b>3.7</b> Load FACTS Timber Stand Improvement</a></li>
-<li class="chapter" data-level="3.8" data-path="vector_data.html"><a href="vector_data.html#harvests"><i class="fa fa-check"></i><b>3.8</b> Load FACTS Timber Harvests</a>
+<li class="chapter" data-level="2.1" data-path="vector_data.html"><a href="vector_data.html#national-forest-management-data-download"><i class="fa fa-check"></i><b>2.1</b> National Forest Management data download</a></li>
+<li class="chapter" data-level="2.2" data-path="vector_data.html"><a href="vector_data.html#load-research-plot-data"><i class="fa fa-check"></i><b>2.2</b> Load Research Plot data</a></li>
+<li class="chapter" data-level="2.3" data-path="vector_data.html"><a href="vector_data.html#load-stem-map-data"><i class="fa fa-check"></i><b>2.3</b> Load Stem Map data</a></li>
+<li class="chapter" data-level="2.4" data-path="vector_data.html"><a href="vector_data.html#load-rx-fire-shapefile"><i class="fa fa-check"></i><b>2.4</b> Load Rx Fire shapefile</a></li>
+<li class="chapter" data-level="2.5" data-path="vector_data.html"><a href="vector_data.html#load-national-forests-shapefile"><i class="fa fa-check"></i><b>2.5</b> Load National Forests shapefile</a></li>
+<li class="chapter" data-level="2.6" data-path="vector_data.html"><a href="vector_data.html#load-experimental-forests-shapefile"><i class="fa fa-check"></i><b>2.6</b> Load Experimental Forests shapefile</a></li>
+<li class="chapter" data-level="2.7" data-path="vector_data.html"><a href="vector_data.html#tsi"><i class="fa fa-check"></i><b>2.7</b> Load FACTS Timber Stand Improvement</a></li>
+<li class="chapter" data-level="2.8" data-path="vector_data.html"><a href="vector_data.html#harvests"><i class="fa fa-check"></i><b>2.8</b> Load FACTS Timber Harvests</a>
 <ul>
-<li class="chapter" data-level="3.8.1" data-path="vector_data.html"><a href="vector_data.html#harvests-by-treatment-type"><i class="fa fa-check"></i><b>3.8.1</b> Harvests by treatment type</a></li>
+<li class="chapter" data-level="2.8.1" data-path="vector_data.html"><a href="vector_data.html#harvests-by-treatment-type"><i class="fa fa-check"></i><b>2.8.1</b> Harvests by treatment type</a></li>
 </ul></li>
-<li class="chapter" data-level="3.9" data-path="vector_data.html"><a href="vector_data.html#join-research-plot-to-harvest"><i class="fa fa-check"></i><b>3.9</b> Join Research Plot to Harvest</a></li>
-<li class="chapter" data-level="3.10" data-path="vector_data.html"><a href="vector_data.html#join-stem-map-to-research-plot-harvest"><i class="fa fa-check"></i><b>3.10</b> Join Stem Map to Research Plot &amp; Harvest</a>
+<li class="chapter" data-level="2.9" data-path="vector_data.html"><a href="vector_data.html#join-research-plot-to-harvest"><i class="fa fa-check"></i><b>2.9</b> Join Research Plot to Harvest</a></li>
+<li class="chapter" data-level="2.10" data-path="vector_data.html"><a href="vector_data.html#join-stem-map-to-research-plot-harvest"><i class="fa fa-check"></i><b>2.10</b> Join Stem Map to Research Plot &amp; Harvest</a>
 <ul>
-<li class="chapter" data-level="3.10.1" data-path="vector_data.html"><a href="vector_data.html#stem-map-descriptive-statistics."><i class="fa fa-check"></i><b>3.10.1</b> Stem Map Descriptive statistics.</a></li>
+<li class="chapter" data-level="2.10.1" data-path="vector_data.html"><a href="vector_data.html#stem-map-descriptive-statistics."><i class="fa fa-check"></i><b>2.10.1</b> Stem Map Descriptive statistics.</a></li>
 </ul></li>
-<li class="chapter" data-level="3.11" data-path="vector_data.html"><a href="vector_data.html#map-harvests-research-plots-stem-map"><i class="fa fa-check"></i><b>3.11</b> Map Harvests, Research Plots, Stem Map</a></li>
-<li class="chapter" data-level="3.12" data-path="vector_data.html"><a href="vector_data.html#write-out-data"><i class="fa fa-check"></i><b>3.12</b> Write Out Data</a></li>
+<li class="chapter" data-level="2.11" data-path="vector_data.html"><a href="vector_data.html#map-harvests-research-plots-stem-map"><i class="fa fa-check"></i><b>2.11</b> Map Harvests, Research Plots, Stem Map</a></li>
+<li class="chapter" data-level="2.12" data-path="vector_data.html"><a href="vector_data.html#write-out-data"><i class="fa fa-check"></i><b>2.12</b> Write Out Data</a></li>
 </ul></li>
-<li class="chapter" data-level="4" data-path="lidar_data.html"><a href="lidar_data.html"><i class="fa fa-check"></i><b>4</b> Analyze Lidar Data</a>
+<li class="chapter" data-level="3" data-path="lidar_data.html"><a href="lidar_data.html"><i class="fa fa-check"></i><b>3</b> Analyze Lidar Data</a>
 <ul>
-<li class="chapter" data-level="4.1" data-path="lidar_data.html"><a href="lidar_data.html#overwrite-data-switch"><i class="fa fa-check"></i><b>4.1</b> Overwrite Data Switch</a></li>
-<li class="chapter" data-level="4.2" data-path="lidar_data.html"><a href="lidar_data.html#download-data-from-natl-map"><i class="fa fa-check"></i><b>4.2</b> Download Data From Nat’l Map</a></li>
-<li class="chapter" data-level="4.3" data-path="lidar_data.html"><a href="lidar_data.html#load-vector-data"><i class="fa fa-check"></i><b>4.3</b> Load Vector Data</a></li>
-<li class="chapter" data-level="4.4" data-path="lidar_data.html"><a href="lidar_data.html#load-elevation-data"><i class="fa fa-check"></i><b>4.4</b> Load Elevation Data</a>
+<li class="chapter" data-level="3.1" data-path="lidar_data.html"><a href="lidar_data.html#overwrite-data-switch"><i class="fa fa-check"></i><b>3.1</b> Overwrite Data Switch</a></li>
+<li class="chapter" data-level="3.2" data-path="lidar_data.html"><a href="lidar_data.html#download-data-from-natl-map"><i class="fa fa-check"></i><b>3.2</b> Download Data From Nat’l Map</a></li>
+<li class="chapter" data-level="3.3" data-path="lidar_data.html"><a href="lidar_data.html#load-vector-data"><i class="fa fa-check"></i><b>3.3</b> Load Vector Data</a></li>
+<li class="chapter" data-level="3.4" data-path="lidar_data.html"><a href="lidar_data.html#load-elevation-data"><i class="fa fa-check"></i><b>3.4</b> Load Elevation Data</a>
 <ul>
-<li class="chapter" data-level="4.4.1" data-path="lidar_data.html"><a href="lidar_data.html#elevation-plot"><i class="fa fa-check"></i><b>4.4.1</b> Elevation plot</a></li>
+<li class="chapter" data-level="3.4.1" data-path="lidar_data.html"><a href="lidar_data.html#elevation-plot"><i class="fa fa-check"></i><b>3.4.1</b> Elevation plot</a></li>
 </ul></li>
-<li class="chapter" data-level="4.5" data-path="lidar_data.html"><a href="lidar_data.html#lidar-data-processing"><i class="fa fa-check"></i><b>4.5</b> Lidar Data Processing</a>
+<li class="chapter" data-level="3.5" data-path="lidar_data.html"><a href="lidar_data.html#lidar-data-processing"><i class="fa fa-check"></i><b>3.5</b> Lidar Data Processing</a>
 <ul>
-<li class="chapter" data-level="4.5.1" data-path="lidar_data.html"><a href="lidar_data.html#height-normalization-using-dem"><i class="fa fa-check"></i><b>4.5.1</b> Height normalization using DEM</a></li>
-<li class="chapter" data-level="4.5.2" data-path="lidar_data.html"><a href="lidar_data.html#canopy-height-model"><i class="fa fa-check"></i><b>4.5.2</b> Canopy Height model</a></li>
-<li class="chapter" data-level="4.5.3" data-path="lidar_data.html"><a href="lidar_data.html#individual-tree-detection-itd"><i class="fa fa-check"></i><b>4.5.3</b> Individual Tree Detection (ITD)</a></li>
-<li class="chapter" data-level="4.5.4" data-path="lidar_data.html"><a href="lidar_data.html#itc"><i class="fa fa-check"></i><b>4.5.4</b> Individual Tree Crown (ITC) Segmentation</a></li>
+<li class="chapter" data-level="3.5.1" data-path="lidar_data.html"><a href="lidar_data.html#height-normalization-using-dem"><i class="fa fa-check"></i><b>3.5.1</b> Height normalization using DEM</a></li>
+<li class="chapter" data-level="3.5.2" data-path="lidar_data.html"><a href="lidar_data.html#canopy-height-model"><i class="fa fa-check"></i><b>3.5.2</b> Canopy Height model</a></li>
+<li class="chapter" data-level="3.5.3" data-path="lidar_data.html"><a href="lidar_data.html#individual-tree-detection-itd"><i class="fa fa-check"></i><b>3.5.3</b> Individual Tree Detection (ITD)</a></li>
+<li class="chapter" data-level="3.5.4" data-path="lidar_data.html"><a href="lidar_data.html#itc"><i class="fa fa-check"></i><b>3.5.4</b> Individual Tree Crown (ITC) Segmentation</a></li>
 </ul></li>
-<li class="chapter" data-level="4.6" data-path="lidar_data.html"><a href="lidar_data.html#lidar-derived-crown-groups-summary"><i class="fa fa-check"></i><b>4.6</b> Lidar-Derived Crown Groups Summary</a>
+<li class="chapter" data-level="3.6" data-path="lidar_data.html"><a href="lidar_data.html#lidar-derived-crown-groups-summary"><i class="fa fa-check"></i><b>3.6</b> Lidar-Derived Crown Groups Summary</a>
 <ul>
-<li class="chapter" data-level="4.6.1" data-path="lidar_data.html"><a href="lidar_data.html#cg_sum"><i class="fa fa-check"></i><b>4.6.1</b> Crown Group Summary Statistics</a></li>
+<li class="chapter" data-level="3.6.1" data-path="lidar_data.html"><a href="lidar_data.html#cg_sum"><i class="fa fa-check"></i><b>3.6.1</b> Crown Group Summary Statistics</a></li>
 </ul></li>
-<li class="chapter" data-level="4.7" data-path="lidar_data.html"><a href="lidar_data.html#map-crowns-and-rx-fire-area"><i class="fa fa-check"></i><b>4.7</b> Map Crowns and Rx Fire Area</a></li>
-<li class="chapter" data-level="4.8" data-path="lidar_data.html"><a href="lidar_data.html#write-out-data-1"><i class="fa fa-check"></i><b>4.8</b> Write Out Data</a></li>
+<li class="chapter" data-level="3.7" data-path="lidar_data.html"><a href="lidar_data.html#map-crowns-and-rx-fire-area"><i class="fa fa-check"></i><b>3.7</b> Map Crowns and Rx Fire Area</a></li>
+<li class="chapter" data-level="3.8" data-path="lidar_data.html"><a href="lidar_data.html#write-out-data-1"><i class="fa fa-check"></i><b>3.8</b> Write Out Data</a></li>
 </ul></li>
-<li class="chapter" data-level="5" data-path="cover_analysis.html"><a href="cover_analysis.html"><i class="fa fa-check"></i><b>5</b> Forest Cover Analysis</a>
+<li class="chapter" data-level="4" data-path="cover_analysis.html"><a href="cover_analysis.html"><i class="fa fa-check"></i><b>4</b> Forest Cover Analysis</a>
 <ul>
-<li class="chapter" data-level="5.1" data-path="cover_analysis.html"><a href="cover_analysis.html#set-contour-line-interval"><i class="fa fa-check"></i><b>5.1</b> Set Contour Line Interval</a></li>
-<li class="chapter" data-level="5.2" data-path="cover_analysis.html"><a href="cover_analysis.html#read-data"><i class="fa fa-check"></i><b>5.2</b> Read Data</a>
+<li class="chapter" data-level="4.1" data-path="cover_analysis.html"><a href="cover_analysis.html#set-contour-line-interval"><i class="fa fa-check"></i><b>4.1</b> Set Contour Line Interval</a></li>
+<li class="chapter" data-level="4.2" data-path="cover_analysis.html"><a href="cover_analysis.html#read-data"><i class="fa fa-check"></i><b>4.2</b> Read Data</a>
 <ul>
-<li class="chapter" data-level="5.2.1" data-path="cover_analysis.html"><a href="cover_analysis.html#data-preparation"><i class="fa fa-check"></i><b>5.2.1</b> Data Preparation</a></li>
-<li class="chapter" data-level="5.2.2" data-path="cover_analysis.html"><a href="cover_analysis.html#read-naip-data"><i class="fa fa-check"></i><b>5.2.2</b> Read NAIP Data</a></li>
+<li class="chapter" data-level="4.2.1" data-path="cover_analysis.html"><a href="cover_analysis.html#data-preparation"><i class="fa fa-check"></i><b>4.2.1</b> Data Preparation</a></li>
+<li class="chapter" data-level="4.2.2" data-path="cover_analysis.html"><a href="cover_analysis.html#read-naip-data"><i class="fa fa-check"></i><b>4.2.2</b> Read NAIP Data</a></li>
 </ul></li>
-<li class="chapter" data-level="5.3" data-path="cover_analysis.html"><a href="cover_analysis.html#post-lidar-acquisition-treatment"><i class="fa fa-check"></i><b>5.3</b> Post-Lidar Acquisition Treatment</a>
+<li class="chapter" data-level="4.3" data-path="cover_analysis.html"><a href="cover_analysis.html#post-lidar-acquisition-treatment"><i class="fa fa-check"></i><b>4.3</b> Post-Lidar Acquisition Treatment</a>
 <ul>
-<li class="chapter" data-level="5.3.1" data-path="cover_analysis.html"><a href="cover_analysis.html#join-treatments-to-rx-fire-units"><i class="fa fa-check"></i><b>5.3.1</b> Join Treatments to Rx Fire Units</a></li>
+<li class="chapter" data-level="4.3.1" data-path="cover_analysis.html"><a href="cover_analysis.html#join-treatments-to-rx-fire-units"><i class="fa fa-check"></i><b>4.3.1</b> Join Treatments to Rx Fire Units</a></li>
 </ul></li>
-<li class="chapter" data-level="5.4" data-path="cover_analysis.html"><a href="cover_analysis.html#forest-cover-summary"><i class="fa fa-check"></i><b>5.4</b> Forest Cover Summary</a></li>
-<li class="chapter" data-level="5.5" data-path="cover_analysis.html"><a href="cover_analysis.html#total-area-by-crown-group-class"><i class="fa fa-check"></i><b>5.5</b> Total Area by Crown Group Class</a></li>
-<li class="chapter" data-level="5.6" data-path="cover_analysis.html"><a href="cover_analysis.html#no-treatment-post-lidar-area-by-crown-group-class"><i class="fa fa-check"></i><b>5.6</b> No Treatment Post-Lidar Area by Crown Group Class</a></li>
-<li class="chapter" data-level="5.7" data-path="cover_analysis.html"><a href="cover_analysis.html#spatial-arrangement-by-crown-group-class"><i class="fa fa-check"></i><b>5.7</b> Spatial Arrangement by Crown Group Class</a></li>
-<li class="chapter" data-level="5.8" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-summary"><i class="fa fa-check"></i><b>5.8</b> Rx Fire Unit Summary</a>
+<li class="chapter" data-level="4.4" data-path="cover_analysis.html"><a href="cover_analysis.html#forest-cover-summary"><i class="fa fa-check"></i><b>4.4</b> Forest Cover Summary</a></li>
+<li class="chapter" data-level="4.5" data-path="cover_analysis.html"><a href="cover_analysis.html#total-area-by-crown-group-class"><i class="fa fa-check"></i><b>4.5</b> Total Area by Crown Group Class</a></li>
+<li class="chapter" data-level="4.6" data-path="cover_analysis.html"><a href="cover_analysis.html#no-treatment-post-lidar-area-by-crown-group-class"><i class="fa fa-check"></i><b>4.6</b> No Treatment Post-Lidar Area by Crown Group Class</a></li>
+<li class="chapter" data-level="4.7" data-path="cover_analysis.html"><a href="cover_analysis.html#spatial-arrangement-by-crown-group-class"><i class="fa fa-check"></i><b>4.7</b> Spatial Arrangement by Crown Group Class</a></li>
+<li class="chapter" data-level="4.8" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-summary"><i class="fa fa-check"></i><b>4.8</b> Rx Fire Unit Summary</a>
 <ul>
-<li class="chapter" data-level="5.8.1" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-cover-class"><i class="fa fa-check"></i><b>5.8.1</b> Rx Fire Unit Cover Class</a></li>
-<li class="chapter" data-level="5.8.2" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-cover-map"><i class="fa fa-check"></i><b>5.8.2</b> Rx Fire Unit Cover Map</a></li>
-<li class="chapter" data-level="5.8.3" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-contour"><i class="fa fa-check"></i><b>5.8.3</b> Rx Fire Unit Contour</a></li>
-<li class="chapter" data-level="5.8.4" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-insert"><i class="fa fa-check"></i><b>5.8.4</b> Rx Fire Unit Insert</a></li>
+<li class="chapter" data-level="4.8.1" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-cover-class"><i class="fa fa-check"></i><b>4.8.1</b> Rx Fire Unit Cover Class</a></li>
+<li class="chapter" data-level="4.8.2" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-cover-map"><i class="fa fa-check"></i><b>4.8.2</b> Rx Fire Unit Cover Map</a></li>
+<li class="chapter" data-level="4.8.3" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-contour"><i class="fa fa-check"></i><b>4.8.3</b> Rx Fire Unit Contour</a></li>
+<li class="chapter" data-level="4.8.4" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-unit-insert"><i class="fa fa-check"></i><b>4.8.4</b> Rx Fire Unit Insert</a></li>
 </ul></li>
-<li class="chapter" data-level="5.9" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-sheets"><i class="fa fa-check"></i><b>5.9</b> Rx Fire Info Sheets</a></li>
-<li class="chapter" data-level="5.10" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-packet"><i class="fa fa-check"></i><b>5.10</b> Rx Fire Info Packet</a></li>
+<li class="chapter" data-level="4.9" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-sheets"><i class="fa fa-check"></i><b>4.9</b> Rx Fire Info Sheets</a></li>
+<li class="chapter" data-level="4.10" data-path="cover_analysis.html"><a href="cover_analysis.html#rx-fire-info-packet"><i class="fa fa-check"></i><b>4.10</b> Rx Fire Info Packet</a></li>
 </ul></li>
-<li class="chapter" data-level="6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html"><i class="fa fa-check"></i><b>6</b> Sample by Canopy Cover and HLI</a>
+<li class="chapter" data-level="5" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html"><i class="fa fa-check"></i><b>5</b> Sample by Canopy Cover and HLI</a>
 <ul>
-<li class="chapter" data-level="6.1" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#read-data-1"><i class="fa fa-check"></i><b>6.1</b> Read Data</a></li>
-<li class="chapter" data-level="6.2" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#hli"><i class="fa fa-check"></i><b>6.2</b> Aspect and HLI</a></li>
-<li class="chapter" data-level="6.3" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#tree-canopy-cover"><i class="fa fa-check"></i><b>6.3</b> Tree Canopy Cover</a></li>
-<li class="chapter" data-level="6.4" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#aggregate-and-crop-to-rx-fire-units"><i class="fa fa-check"></i><b>6.4</b> Aggregate and Crop to Rx fire Units</a></li>
-<li class="chapter" data-level="6.5" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#classify-raster-grid"><i class="fa fa-check"></i><b>6.5</b> Classify Raster Grid</a>
+<li class="chapter" data-level="5.1" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#read-data-1"><i class="fa fa-check"></i><b>5.1</b> Read Data</a></li>
+<li class="chapter" data-level="5.2" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#hli"><i class="fa fa-check"></i><b>5.2</b> Aspect and HLI</a></li>
+<li class="chapter" data-level="5.3" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#tree-canopy-cover"><i class="fa fa-check"></i><b>5.3</b> Tree Canopy Cover</a></li>
+<li class="chapter" data-level="5.4" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#aggregate-and-crop-to-rx-fire-units"><i class="fa fa-check"></i><b>5.4</b> Aggregate and Crop to Rx fire Units</a></li>
+<li class="chapter" data-level="5.5" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#classify-raster-grid"><i class="fa fa-check"></i><b>5.5</b> Classify Raster Grid</a>
 <ul>
-<li class="chapter" data-level="6.5.1" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#cutpoints"><i class="fa fa-check"></i><b>6.5.1</b> Cutpoints</a></li>
-<li class="chapter" data-level="6.5.2" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#canopy-cover-and-hli-group-map"><i class="fa fa-check"></i><b>6.5.2</b> Canopy Cover and HLI Group Map</a></li>
-<li class="chapter" data-level="6.5.3" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#map-of-grouped-canopy-cover-and-hli"><i class="fa fa-check"></i><b>6.5.3</b> Map of grouped Canopy Cover and HLI</a></li>
-<li class="chapter" data-level="6.5.4" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#combine-grouped-canopy-cover-and-hli"><i class="fa fa-check"></i><b>6.5.4</b> Combine Grouped Canopy Cover and HLI</a></li>
-<li class="chapter" data-level="6.5.5" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#example-rx-fire-unit"><i class="fa fa-check"></i><b>6.5.5</b> Example Rx Fire Unit</a></li>
-<li class="chapter" data-level="6.5.6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#distribution-of-canopy-cover-and-hli-by-rx-fire-unit"><i class="fa fa-check"></i><b>6.5.6</b> Distribution of Canopy Cover and HLI by Rx Fire Unit</a></li>
-<li class="chapter" data-level="6.5.7" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#matrix-of-canopy-cover-and-hli-by-rx-fire-unit"><i class="fa fa-check"></i><b>6.5.7</b> Matrix of Canopy Cover and HLI by Rx Fire Unit</a></li>
+<li class="chapter" data-level="5.5.1" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#cutpoints"><i class="fa fa-check"></i><b>5.5.1</b> Cutpoints</a></li>
+<li class="chapter" data-level="5.5.2" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#canopy-cover-and-hli-group-map"><i class="fa fa-check"></i><b>5.5.2</b> Canopy Cover and HLI Group Map</a></li>
+<li class="chapter" data-level="5.5.3" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#map-of-grouped-canopy-cover-and-hli"><i class="fa fa-check"></i><b>5.5.3</b> Map of grouped Canopy Cover and HLI</a></li>
+<li class="chapter" data-level="5.5.4" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#combine-grouped-canopy-cover-and-hli"><i class="fa fa-check"></i><b>5.5.4</b> Combine Grouped Canopy Cover and HLI</a></li>
+<li class="chapter" data-level="5.5.5" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#example-rx-fire-unit"><i class="fa fa-check"></i><b>5.5.5</b> Example Rx Fire Unit</a></li>
+<li class="chapter" data-level="5.5.6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#distribution-of-canopy-cover-and-hli-by-rx-fire-unit"><i class="fa fa-check"></i><b>5.5.6</b> Distribution of Canopy Cover and HLI by Rx Fire Unit</a></li>
+<li class="chapter" data-level="5.5.7" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#matrix-of-canopy-cover-and-hli-by-rx-fire-unit"><i class="fa fa-check"></i><b>5.5.7</b> Matrix of Canopy Cover and HLI by Rx Fire Unit</a></li>
 </ul></li>
-<li class="chapter" data-level="6.6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#sample-order-and-export"><i class="fa fa-check"></i><b>6.6</b> Sample Order and Export</a></li>
+<li class="chapter" data-level="5.6" data-path="sample_canopycov_hli.html"><a href="sample_canopycov_hli.html#sample-order-and-export"><i class="fa fa-check"></i><b>5.6</b> Sample Order and Export</a></li>
 </ul></li>
 </ul>
 

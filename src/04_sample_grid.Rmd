@@ -155,18 +155,58 @@ gc()
 
 ## Tree Canopy Cover
 
-The tree crown raster data represents tree crowns (interconnected crown groups or individual crowns) with minimum tree height of 2 meters was created [here](#itc) using `lidR::dalponte2016`. Values of this raster are tree crown id's. 
+The tree crown raster data represents tree crowns (interconnected crown groups or individual crowns) with minimum tree height of 2 meters created [here](#itc) using `lidR::dalponte2016`. Values of this raster are tree crown id's. 
 
-```{r crowns-rast, results='hide', fig.show='hide'}
+```{r crowns-rast, results='hide'}
 # values
 crowns_rast %>% terra::values() %>% summary()
 # plot
 crowns_rast %>% 
+  terra::mask(
+    rx_fire %>% 
+      sf::st_union() %>% 
+      sf::st_buffer(100) %>% 
+      terra::vect()
+  ) %>% 
   as.data.frame(xy=T) %>% 
   dplyr::rename(f=3) %>% 
-  ggplot() +
-    geom_raster(mapping=aes(x=x,y=y,fill=f)) +
-    scale_fill_viridis_c()
+    ggplot() +
+      geom_tile(mapping=aes(x=x,y=y,fill=f), fill = "forestgreen", alpha = 0.8, color = NA) +
+      geom_sf(data = bhef_boundary, alpha = 0, lwd = 1, color = "black", linetype = "dashed") +
+      geom_sf(data = rx_fire, alpha = 0, lwd = 1, color = "orangered") +
+      geom_sf_label(data = rx_fire, aes(label = unit)
+        , label.size = NA
+        , alpha = 0
+        , size = 3
+      ) +
+      coord_sf(expand = F) +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      labs(
+          title = "Lidar-Derived Canopy Cover (>2m in 2017)"
+          , subtitle = paste0("Rx fire units")
+          , x=""
+          , y=""
+          # , fill = nm_temp[layer_n]
+        ) +
+      theme_light() +
+      theme(
+        legend.position = "none"
+        , legend.direction = "horizontal"
+        , legend.margin = margin(0,0,0,0)
+        , legend.box.margin = margin(-21,0,2,0)
+        , legend.text = element_text(size = 7, angle = 25, hjust = 0.7)
+        , legend.title = element_text(size = 7)
+        , axis.text = element_text(size = 7)
+        , axis.text.x = element_text(size = 7, angle = 35, hjust = 0.7)
+        , plot.title = element_text(size = 10, face = "bold", margin = margin(0,0,2,0))
+        , plot.subtitle = element_text(size=8, face="italic", color="orangered", margin = margin(0,0,0,0))
+        , panel.border = element_blank()
+      )
+```
+
+
+```{r crowns-rast-x, eval=FALSE, include=FALSE, results='hide', fig.show='hide'}
 # zoom plot
 crowns_rast %>% 
   terra::crop(
@@ -185,6 +225,10 @@ mv_temp <- crowns_rast %>%
   stars::st_as_stars()
 mapview::mapviewOptions(homebutton = FALSE, basemaps = c("Esri.WorldImagery"))
 mapview::mapview(mv_temp, col.regions = "forestgreen", na.color = "transparent", legend = F)
+```
+
+
+```{r crown-reclass, results='hide', fig.show='hide'}
 # reclass crowns as 1, else 0
   # reclass matrix
   rcl_temp <- c(
@@ -301,6 +345,8 @@ cowplot::plot_grid(
   , nrow = 1
 )
 ```
+
+Canopy cover (%) and HLI (median) were aggregated to a sample grid at **`r scales::comma(agg_res, accuracy=1)`m** resolution from an original data resolution of **`r scales::comma(terra::xres(crowns_rast), accuracy=1)`m**.
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
 remove(list = ls()[grep("_temp",ls())])
@@ -722,7 +768,7 @@ ggplot(data=dist_temp) +
 
 ### Matrix of Canopy Cover and HLI by Rx Fire Unit
 
-```{r matrix-crcov-hli-unit, fig.height=14}
+```{r matrix-crcov-hli-unit, fig.height=15}
 concat_sf %>% 
     sf::st_drop_geometry() %>% 
     dplyr::filter(crowncov_hli_filter!="other") %>% 
@@ -733,14 +779,14 @@ concat_sf %>%
       , tot = sum(n)
     ) %>% 
     dplyr::ungroup() %>% 
-    # dplyr::filter(rx_fire_unit %in% c("1","11","22")) %>% 
+    # dplyr::filter(rx_fire_unit %in% c("1","11","22")) %>%
     dplyr::mutate(rx_fire_unit = paste0("unit ",rx_fire_unit)) %>%
 ggplot(
     mapping = aes(y = crowncov_grp, x = hli_grp)
   ) +
   geom_tile(aes(fill = crowncov_hli_filter), color = "white",alpha=0.8) +
-  geom_text(aes(label = scales::comma(n,accuracy=1)), vjust = 0.5,size = 3) +
-  geom_text(aes(label = scales::percent(pct,accuracy=0.1)), vjust = 2, size=2) +
+  geom_text(aes(label = scales::comma(n,accuracy=1), fontface="bold"), vjust = 0.5,size = 3.5) +
+  geom_text(aes(label = scales::percent(pct,accuracy=0.1)), vjust = 0.5, hjust=-0.55,size = 2.5) +
   facet_grid(
     rows = vars(rx_fire_unit)
     # , switch = "y"
